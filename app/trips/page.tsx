@@ -13,7 +13,7 @@ export default async function Trips() {
   if (!user) redirect("/");
   const { data: profile } = await supabase
     .from("profiles")
-    .select("first_name,last_name")
+    .select("email,first_name,last_name")
     .eq("id", user.id)
     .maybeSingle();
   const { data: trips, error: tripsError } = await supabase

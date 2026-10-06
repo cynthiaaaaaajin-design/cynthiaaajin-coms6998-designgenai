@@ -11,7 +11,7 @@ export default async function ProfilePage() {
   if (!user) redirect("/");
   const { data: profile, error } = await supabase
     .from("profiles")
-    .select("first_name,last_name,avatar_url")
+    .select("email,first_name,last_name,avatar_url")
     .eq("id", user.id)
     .maybeSingle();
   if (error) {
@@ -85,7 +85,7 @@ export default async function ProfilePage() {
                 avatarSrc={avatarSrc}
                 avatarError={avatarError}
                 userId={user.id}
-                email={user.email ?? ""}
+                email={profile.email ?? user.email ?? ""}
               />
             )}
           </section>

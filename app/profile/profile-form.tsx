@@ -8,6 +8,7 @@ import { AvatarCropModal } from "@/components/avatar-crop-modal";
 import { createClient } from "@/lib/supabase/client";
 
 type Profile = {
+  email: string | null;
   first_name: string | null;
   last_name: string | null;
   avatar_url: string | null;
@@ -83,7 +84,7 @@ export function ProfileForm({
         .from("profiles")
         .update({ avatar_url: path })
         .eq("id", user.id)
-        .select("id")
+        .select("id,email")
         .single();
       if (updateError)
         throw new Error(
@@ -132,7 +133,7 @@ export function ProfileForm({
           last_name: lastName.trim(),
         })
         .eq("id", user.id)
-        .select("id")
+        .select("id,email")
         .single();
       if (error || !data)
         throw new Error(
