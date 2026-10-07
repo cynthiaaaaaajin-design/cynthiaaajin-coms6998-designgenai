@@ -1,3 +1,4 @@
+import { RepairItineraryButton } from '@/components/repair-itinerary-button';
 import { TripCoverArt } from "@/components/trip-cover-art";
 import { normalizeDestination } from "@/lib/destinations";
 import type { CSSProperties } from 'react';
@@ -12,6 +13,7 @@ import { ManageTravelers } from '@/components/manage-travelers';
 import { loadTravelers } from '@/lib/travelers-server';
 import type { Traveler } from '@/lib/travelers';
 import { createClient } from '@/lib/supabase/server';
+import { supabaseConfig } from '@/lib/supabase/config';
 import { accessibleTrip, loadFeedback } from '@/lib/feedback-server';
 import { emptyFeedback, type FeedbackSummary } from '@/lib/feedback';
 import { tripDayCount, validTripId, type ItineraryActivity, type ItineraryVersion } from '@/lib/itinerary';
@@ -70,6 +72,17 @@ export default async function TripDetail({ params, searchParams }: {
       .eq('version_id', version.id).order('day_number').order('position');
     items = result.data ?? [];
     itemsError = !!result.error;
+    // Temporary server-side diagnostics for comparing local and production reads.
+    console.info('[Trip itinerary diagnostic]', JSON.stringify({
+      projectHost: new URL(supabaseConfig().url).hostname,
+      userId: user.id,
+      tripId,
+      role: isOwner ? 'owner' : 'member',
+      selectedVersionId: version.id,
+      selectedVersionNumber: version.version_number,
+      returnedCount: items.length,
+      error: result.error ? { code: result.error.code, message: result.error.message } : null,
+    }));
   }
   let feedback: Record<string, FeedbackSummary> = {};
   let feedbackError = false;
@@ -129,7 +142,10 @@ export default async function TripDetail({ params, searchParams }: {
             {itemsError ? (
               <p className="notice mt-6" role="alert">Your activities could not be loaded. Please refresh to try again.</p>
             ) : items.length === 0 ? (
-              <p className="notice mt-6" role="alert">This version is saved, but no activities are available. The activity save may have failed, or access may be restricted. Contact the app maintainer to check this version. Your saved generation will not be replaced.</p>
+              <div className="notice mt-6">
+                <p>Something went wrong while saving this itinerary.</p>
+                {isOwner && ['ai_initial', 'ai_revision'].includes(version.source) && <RepairItineraryButton key={version.id} tripId={tripId} versionId={version.id} />}
+              </div>
             ) : days.map(day => (
               <section key={`${version.id}:${day}`} className="itinerary-version mt-8" aria-labelledby={`day-${day}`}>
                 <h3 id={`day-${day}`} className="mb-4 text-lg font-semibold">Day {day}</h3>

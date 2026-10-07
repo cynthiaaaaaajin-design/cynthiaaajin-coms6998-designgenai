@@ -175,10 +175,18 @@ A denied/zero-row response update returns an explicit persistence error; the pro
 remains saved, but the response cannot be guaranteed if that write fails.
 A process interruption after the prompt insert can likewise leave a null response.
 
-Failed attempts consume a version number and have no activities. The existing UI
-shows the highest-numbered version and blocks generation/revision on an empty
-saved version; automatic retry/recovery is outside this change. Earlier successful
-versions remain accessible through history. If saving activities fails, the prompt
+Failed attempts consume a version number and may have no activities. Owners can
+use **Repair itinerary** on an empty AI version, including one selected from history.
+The repair endpoint validates saved response text first (including older error
+wrappers), or calls Gemini with the exact saved prompt if no valid response exists.
+It checks the exact visible item count before work and again before inserting into
+the same version. It never upserts/deletes items or changes version metadata.
+The existing unique `(version_id, day_number, position)` constraint and required
+initial slot reject colliding repair inserts. A regenerated response is saved only
+after the recovery insert succeeds; a response-update failure is logged while the
+restored items remain usable. Owner SELECT visibility must be correct: an RLS-hidden
+row is not proof of missing data. Diagnose visibility before using repair for a
+production-only empty display. Earlier successful versions remain accessible through history. If saving activities fails, the prompt
 and response remain saved. Manual editing is not implemented.
 
 Local verification:
@@ -217,7 +225,7 @@ Manual end-to-end checks (require a real account and existing trip):
 8. Submit invalid/empty preferences or use a trip with invalid/missing dates.
    Expect a clear validation error and no inserts. Temporarily unset
    `GEMINI_API_KEY` locally and restart: a new trip's generation should show a
-   generic generation error with category `missing_api_key`. The attempt’s exact prompt and sanitized error are saved in a new version, with no activities (provided existing version UPDATE permissions allow saving the error). Restore the environment value. Use a disposable test trip: the empty version remains saved and the current UI does not provide retry recovery.
+   generic generation error with category `missing_api_key`. The attempt’s exact prompt and sanitized error are saved in a new version, with no activities (provided existing version UPDATE permissions allow saving the error). Restore the environment value. Use a disposable test trip: the empty version remains saved and the owner can use Repair itinerary after restoring configuration.
 9. Check browser network requests: the browser calls only the application's
    generation endpoint, and its payload contains preferences, never the API key.
    Partial-save and provider-error behavior can be tested safely with the local
@@ -506,3 +514,5 @@ Manual end-to-end: sign in with a new account, use Plan your first trip, fill al
 four fields, and submit. Confirm the trip opens with the AI form, appears under
 MY TRIPS, and is hidden from unrelated accounts. Generate with budget/preferences
 and verify Version 1. Try missing fields and reversed dates; neither should insert.
+
+Repair regression checks: `node scripts/verify-repair.mjs` (mocked Supabase/Gemini; no live mutations). Repair diagnostics use `[Itinerary repair]` and include stage, method (`saved_response` or `saved_prompt`), and outcome without prompts or model response bodies.

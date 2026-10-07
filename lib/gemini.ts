@@ -29,7 +29,7 @@ const responseJsonSchema = {
   additionalProperties: false,
 };
 
-export async function generateItinerary(prompt: string, days: number, captureResponse?: (text: string) => void) {
+export async function generateItinerary(prompt: string, days: number, captureResponse?: (text: string) => void, logErrors = true) {
   let stage = 'Gemini configuration';
   try {
     const apiKey = process.env.GEMINI_API_KEY;
@@ -69,7 +69,7 @@ export async function generateItinerary(prompt: string, days: number, captureRes
     const responseText = response.text;
     return { responseText, activities: parseActivities(responseText, days) };
   } catch (error) {
-    await logGeminiError(error, stage);
+    if (logErrors) await logGeminiError(error, stage);
     // Preserve the original SDK error (including status/body) for the route logger.
     throw error;
   }
