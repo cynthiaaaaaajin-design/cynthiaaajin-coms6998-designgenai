@@ -372,7 +372,8 @@ label {
   font-size: 13px;
   font-weight: 600;
 }
-input:not([type="file"]) {
+input:not([type="file"]),
+textarea {
   display: block;
   width: 100%;
   padding: 12px 14px;
@@ -381,7 +382,11 @@ input:not([type="file"]) {
   border-radius: 9px;
   font-size: 14px;
 }
-input::placeholder {
+textarea {
+  resize: vertical;
+}
+input::placeholder,
+textarea::placeholder {
   color: #a0aaa5;
 }
 .dashboard-banner {
@@ -505,3 +510,86 @@ input.crop-zoom[type="range"] {
   accent-color: #20685d;
   cursor: pointer;
 }
+
+/* TripSync motion: short entrances; only active work has repeating motion. */
+:root { --motion-ease: cubic-bezier(.22, .61, .36, 1); }
+@keyframes trip-enter {
+  from { opacity: 0; translate: 0 6px; }
+  to { opacity: 1; translate: 0 0; }
+}
+@keyframes trip-fade { from { opacity: .35; } to { opacity: 1; } }
+@keyframes trip-sparkle {
+  0%, 100% { opacity: .55; rotate: -4deg; scale: .96; }
+  50% { opacity: 1; rotate: 4deg; scale: 1.04; }
+}
+@keyframes trip-badge {
+  from { box-shadow: 0 0 0 4px #20685d18; }
+  to { box-shadow: 0 0 0 0 #20685d00; }
+}
+@keyframes route-reveal { from { scale: 0 1; opacity: 0; } to { scale: 1 1; opacity: .5; } }
+.hero-copy, .page-title, .dashboard-banner > div, .create-trip-form {
+  animation: trip-enter 280ms var(--motion-ease) both;
+}
+.motion-card, .activity-card {
+  animation: trip-enter 280ms var(--motion-ease) backwards;
+  animation-delay: var(--entrance-delay, 0ms);
+}
+.itinerary-version { animation: trip-fade 220ms ease-out; }
+.version-badge { animation: trip-badge 350ms ease-out; }
+.trip-card { transition: translate 220ms var(--motion-ease), box-shadow 220ms ease; }
+.destination-art > .art-sun { transition: scale 280ms var(--motion-ease); }
+.destination-art > .art-hill { transition: scale 280ms var(--motion-ease); }
+.cta-arrow { display: inline-block; transition: translate 180ms ease; }
+.button-primary, .button-secondary {
+  transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, scale 180ms ease;
+  touch-action: manipulation;
+}
+.button-primary:active:not(:disabled), .button-secondary:active:not(:disabled) { scale: .98; }
+button[aria-pressed="true"] { box-shadow: inset 0 0 0 1px #ffffff35, 0 2px 6px #20685d18; }
+@media (hover: hover) and (pointer: fine) {
+  .trip-card:hover, .trip-card:focus-within { translate: 0 -3px; box-shadow: 0 12px 28px #283f351c; }
+  .trip-card:hover .art-sun, .trip-card:hover .art-hill,
+  .trip-card:focus-within .art-sun, .trip-card:focus-within .art-hill { scale: 1.03; }
+  .trip-card:hover .cta-arrow, .trip-card:focus-within .cta-arrow { translate: 3px -1px; }
+}
+@media (hover: none) { .trip-card:active { box-shadow: 0 3px 10px #283f3524; } }
+.planning-status {
+  display: flex; align-items: center; gap: 16px; padding: 18px;
+  border: 1px solid #dce8df; border-radius: 14px; background: #f0f5ef;
+  color: #20685d; animation: trip-enter 220ms ease-out;
+}
+.planning-sparkle { flex-shrink: 0; font-size: 36px; line-height: 1; animation: trip-sparkle 2200ms ease-in-out infinite; }
+.motion-success { animation: trip-enter 180ms ease-out; }
+.feedback-counts { animation: trip-fade 180ms ease-out; font-variant-numeric: tabular-nums; }
+.feedback-progress-track { height: 4px; overflow: hidden; border-radius: 99px; background: #e5ece7; }
+.feedback-progress-fill { height: 100%; background: #408575; transform-origin: left; transition: transform 280ms var(--motion-ease); }
+.route-motif { width: 100px; height: 12px; margin-top: 22px; position: relative; pointer-events: none; }
+.route-motif::before { content: ''; position: absolute; inset: 5px 0; border-top: 2px dotted #628278; transform-origin: left; opacity: .5; animation: route-reveal 300ms var(--motion-ease); }
+.route-motif::after { content: ''; position: absolute; right: 0; top: 2px; width: 8px; height: 8px; background: #628278; border: 2px solid #edf2e9; border-radius: 50%; }
+input, textarea, select { transition: border-color 180ms ease, box-shadow 180ms ease; }
+input:focus-visible, textarea:focus-visible, select:focus-visible { border-color: #20685d; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  .trip-card, .hero-preview, .floating-note, .motion-card, .activity-card, .cta-arrow,
+  .planning-sparkle, .hero-copy, .page-title, .dashboard-banner > div, .create-trip-form,
+  .button-primary, .button-secondary, .destination-art > .art-sun, .destination-art > .art-hill {
+    translate: none !important; scale: none !important; rotate: none !important;
+  }
+  .hero-preview, .hero-preview .trip-card, .floating-note { transform: none; }
+}
+
+/* Local editorial destination covers; all motion stays on the artwork layer. */
+.trip-cover-svg { display: block; width: 100%; height: 100%; transition: scale 280ms var(--motion-ease); }
+.illustrated-cover { height: 248px; background: #eee9db; }
+.illustrated-cover .destination-label { left: 18px; right: 18px; bottom: 16px; width: fit-content; max-width: calc(100% - 36px); padding: 7px 12px; border-radius: 10px; background: #f9f8f1f2; color: #234e46; font-size: 20px; line-height: 1.35; letter-spacing: -.4px; }
+.trip-card h3 { line-height: 1.35; }
+.trip-detail-banner > .min-w-0 { flex: 1; }
+.trip-detail-cover { width: 38%; max-width: 400px; height: 230px; overflow: hidden; border-radius: 18px; flex-shrink: 0; }
+@media (hover: hover) and (pointer: fine) {
+  .trip-card:hover .trip-cover-svg, .trip-card:focus-within .trip-cover-svg { scale: 1.03; }
+}
+@media (max-width: 640px) {
+  .trip-detail-banner { flex-direction: column; align-items: stretch; }
+  .trip-detail-cover { width: 100%; max-width: none; height: 190px; }
+}
+@media (prefers-reduced-motion: reduce) { .trip-cover-svg { scale: none !important; transition: none !important; } }

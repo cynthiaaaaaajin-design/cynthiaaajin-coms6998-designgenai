@@ -1,7 +1,9 @@
+import { TripCoverArt } from "@/components/trip-cover-art";
+import { normalizeDestination } from "@/lib/destinations";
 const destinations = {
   coast: {
     name: "A long weekend in Lisbon",
-    location: "Portugal",
+    location: "Lisbon, Portugal",
     emoji: "☀",
     style: "coast",
     dates: "May 22 – 26",
@@ -32,14 +34,9 @@ export function TripCard({
   const trip = destinations[destination];
   return (
     <article className="trip-card">
-      <div className={`destination-art ${trip.style}`}>
-        <span className="art-sun" />
-        <span className="art-hill hill-back" />
-        <span className="art-hill hill-front" />
-        <span className="destination-label">{trip.location}</span>
-        <span className="art-symbol" aria-hidden="true">
-          {trip.emoji}
-        </span>
+      <div className="destination-art illustrated-cover">
+        <TripCoverArt destination={trip.location} />
+        <span className="destination-label">{normalizeDestination(trip.location).canonical}</span>
         <span className="sample-label">Sample trip</span>
       </div>
       <div className="p-6">

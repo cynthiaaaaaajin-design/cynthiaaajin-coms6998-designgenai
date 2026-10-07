@@ -1,5 +1,12 @@
+import type { CSSProperties } from "react";
+import Link from "next/link";
+import { TripCoverArt } from "@/components/trip-cover-art";
+import { normalizeDestination } from "@/lib/destinations";
+
 export type Trip = {
   id: string | number;
+  isOwner: boolean;
+  ownerName: string | null;
   title: string | null;
   destination: string | null;
   start_date: string | null;
@@ -20,7 +27,7 @@ function formatDate(value: string | null) {
 }
 
 export function SavedTripCard({ trip, index }: { trip: Trip; index: number }) {
-  const style = ["coast", "mountain", "city"][index % 3];
+  const destination = normalizeDestination(trip.destination ?? "");
   const start = formatDate(trip.start_date);
   const end = formatDate(trip.end_date);
   const dates =
@@ -32,22 +39,21 @@ export function SavedTripCard({ trip, index }: { trip: Trip; index: number }) {
           ? `Until ${end}`
           : "Dates to be decided";
   return (
-    <article className="trip-card">
-      <div className={`destination-art ${style}`}>
-        <span className="art-sun" aria-hidden="true" />
-        <span className="art-hill hill-back" aria-hidden="true" />
-        <span className="art-hill hill-front" aria-hidden="true" />
-        <span className="destination-label break-words">
-          {trip.destination?.trim() || "Somewhere wonderful"}
-        </span>
-        <span className="sample-label">Your trip</span>
+    <article className="trip-card motion-card" style={{ "--entrance-delay": `${Math.min(index, 4) * 35}ms` } as CSSProperties}>
+      <div className="destination-art illustrated-cover">
+        <TripCoverArt destination={trip.destination ?? ""} />
+        <span className="destination-label break-words">{destination.canonical}</span>
+        <span className="sample-label">{trip.isOwner ? "Owner" : "Shared with you"}</span>
       </div>
       <div className="p-6">
         <p className="eyebrow mb-2">{dates}</p>
         <h3 className="break-words text-xl font-semibold tracking-tight">
           {trip.title?.trim() || "Untitled adventure"}
         </h3>
-        <p className="mt-5 text-sm text-slate-500">Good times ahead.</p>
+        {!trip.isOwner && <p className="mt-2 text-sm text-slate-500">Owned by {trip.ownerName || "another traveler"}</p>}
+        <Link href={`/trips/${trip.id}`} className="button-secondary mt-5">
+          Open trip <span className="cta-arrow" aria-hidden="true">↗</span>
+        </Link>
       </div>
     </article>
   );

@@ -20,6 +20,7 @@ export default async function Home({
       <main className="page-shell">
         <section className="hero">
           <div className="hero-copy">
+            <div className="route-motif" aria-hidden="true" />
             <p className="pill">A little less planning. A lot more going.</p>
             <h1>
               Great trips.
