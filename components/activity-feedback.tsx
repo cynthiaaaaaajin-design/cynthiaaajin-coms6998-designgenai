@@ -49,13 +49,14 @@ export function ActivityFeedback({ tripId, itemId, title, initialSummary, readOn
   }
 
   return (
-    <div className="mt-5 border-t border-slate-100 pt-5">
-      <div key={`${summary?.likes}:${summary?.dislikes}`} className="feedback-counts flex flex-wrap gap-4 text-sm" aria-live="polite">
-        {summary ? <><span className="font-semibold text-teal-800">{summary.likes} Likes</span><span className="font-semibold text-slate-600">{summary.dislikes} Dislikes</span></>
+    <div className="feedback-workspace mt-5">
+      <p className="eyebrow">GROUP PULSE</p>
+      <div key={`${summary?.likes}:${summary?.dislikes}`} className="feedback-counts pulse-counts flex flex-wrap gap-4 text-sm" aria-live="polite">
+        {summary ? <><span className="font-semibold text-teal-800"><span aria-hidden="true">👍 </span>{summary.likes} Likes</span><span className="font-semibold text-slate-600"><span aria-hidden="true">👎 </span>{summary.dislikes} Dislikes</span></>
           : <span className="text-amber-800">Feedback counts are unavailable. Refresh to try again.</span>}
       </div>
       {summary && <section className="mt-4" aria-label="Group feedback">
-        <h5 className="font-semibold">Group feedback</h5>
+        <h5 className="font-semibold">Traveler feedback</h5>
         {summary.group.length ? <ul className="mt-2 divide-y divide-slate-100">
           {summary.group.map(vote => <li key={vote.userId} className="py-3 text-sm">
             <p className="font-semibold">{vote.name || `Traveler ${vote.userId.slice(0, 8)}`}</p>
@@ -64,6 +65,8 @@ export function ActivityFeedback({ tripId, itemId, title, initialSummary, readOn
           </li>)}
         </ul> : <p className="mt-2 text-sm text-slate-500">No feedback yet.</p>}
       </section>}
+      <div className="your-take">
+      <p className="eyebrow">YOUR TAKE</p>
       <p className="mt-2 text-sm text-slate-500">Your latest feedback: {mine ? mine.value === 1 ? 'Like' : 'Dislike' : summary ? 'Not submitted yet' : 'Unavailable'}</p>
       {mine?.comment && <p className="mt-2 whitespace-pre-wrap break-words text-sm text-slate-600">Your latest comment: {mine.comment}</p>}
       {!readOnly && <form onSubmit={submit} className="mt-4" aria-label={`Feedback for ${title}`} aria-busy={busy}>
@@ -71,7 +74,7 @@ export function ActivityFeedback({ tripId, itemId, title, initialSummary, readOn
           <legend className="sr-only">Choose Like or Dislike</legend>
           <div className="flex flex-wrap gap-2">
             <button type="button" aria-pressed={value === 1} className={value === 1 ? 'button-primary' : 'button-secondary'} onClick={() => setValue(1)}>Like</button>
-            <button type="button" aria-pressed={value === -1} className={value === -1 ? 'button-primary' : 'button-secondary'} onClick={() => setValue(-1)}>Dislike</button>
+            <button type="button" aria-pressed={value === -1} className={value === -1 ? 'button-primary' : 'button-secondary'} onClick={() => setValue(-1)} aria-label="Skip (Dislike)">Skip</button>
           </div>
           <div className="mt-4">
             <label htmlFor={`feedback-${itemId}`}>Comment (optional)</label>
@@ -84,6 +87,7 @@ export function ActivityFeedback({ tripId, itemId, title, initialSummary, readOn
           {error && <p className="text-red-700" role="alert">{error}</p>}
         </div>
       </form>}
+      </div>
     </div>
   );
 }

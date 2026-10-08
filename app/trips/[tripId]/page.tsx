@@ -102,7 +102,7 @@ export default async function TripDetail({ params, searchParams }: {
   return (
     <>
       <Header signedIn active="trips" />
-      <main className="page-shell py-12">
+      <main className="page-shell mode-detail py-12" data-travel-theme={normalizeDestination(trip.destination ?? "").theme}>
         <Link href="/trips" className="text-sm font-semibold text-teal-800">← Back to your trips</Link>
         <div className="dashboard-banner trip-detail-banner">
           <div className="min-w-0">
@@ -120,7 +120,7 @@ export default async function TripDetail({ params, searchParams }: {
         {versionError ? (
           <div className="notice mt-8" role="alert">Your saved itinerary could not be loaded. Refresh to try again. Generation is unavailable until we can check existing versions.</div>
         ) : version ? (
-          <section className="itinerary-version mt-10" aria-labelledby="itinerary-heading">
+          <section className="itinerary-version itinerary-journal mt-10" aria-labelledby="itinerary-heading">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 id="itinerary-heading" className="text-2xl font-semibold">Your itinerary</h2>
               <span key={version.id} className="pill version-badge">Version {version.version_number} · {version.source === 'manual' ? 'Manually edited' : 'AI generated'}</span>
@@ -147,12 +147,12 @@ export default async function TripDetail({ params, searchParams }: {
                 {isOwner && ['ai_initial', 'ai_revision'].includes(version.source) && <RepairItineraryButton key={version.id} tripId={tripId} versionId={version.id} />}
               </div>
             ) : days.map(day => (
-              <section key={`${version.id}:${day}`} className="itinerary-version mt-8" aria-labelledby={`day-${day}`}>
-                <h3 id={`day-${day}`} className="mb-4 text-lg font-semibold">Day {day}</h3>
-                <ol className="grid gap-4">
+              <section key={`${version.id}:${day}`} className="itinerary-version itinerary-day mt-8" aria-labelledby={`day-${day}`}>
+                <h3 id={`day-${day}`} className="day-label mb-4 text-lg font-semibold">DAY {String(day).padStart(2, '0')}</h3>
+                <ol className="itinerary-timeline">
                   {items.filter(item => item.day_number === day).map((item, index) => (
-                    <li key={item.id} style={{ "--entrance-delay": `${Math.min(index, 4) * 30}ms` } as CSSProperties} className="activity-card settings-card flex flex-col gap-4 sm:flex-row sm:gap-8">
-                      <p className="min-w-16 text-sm font-semibold text-teal-700">{item.start_time?.slice(0, 5) || 'Flexible'}</p>
+                    <li key={item.id} style={{ "--entrance-delay": `${Math.min(index, 4) * 30}ms` } as CSSProperties} className="activity-card timeline-activity">
+                      <p className="timeline-time text-sm font-semibold">{item.start_time?.slice(0, 5) || 'Flexible'}</p>
                       <div className="min-w-0 flex-1">
                         <h4 className="break-words text-lg font-semibold">{item.title}</h4>
                         {item.location && <p className="mt-1 break-words text-sm font-medium text-teal-800">{item.location}</p>}

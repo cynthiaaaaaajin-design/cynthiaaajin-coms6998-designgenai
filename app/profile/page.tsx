@@ -42,11 +42,11 @@ export default async function ProfilePage() {
   return (
     <>
       <Header signedIn active="profile" />
-      <main className="page-shell py-12">
-        <p className="eyebrow">YOUR TRAVELER PROFILE</p>
-        <h1 className="page-title">Make yourself at home.</h1>
+      <main className="page-shell mode-profile py-12">
+        <p className="eyebrow">YOUR TRAVEL PASSPORT</p>
+        <h1 className="page-title">{[profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || "Make yourself at home."}</h1>
         <p className="mt-4 text-slate-500">
-          A few details to help your travel crew recognize you.
+          Traveler profile · A familiar face for every adventure.
         </p>
         <div className="profile-grid">
           <aside>

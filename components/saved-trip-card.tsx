@@ -1,3 +1,4 @@
+import { TravelerInitials } from "@/components/traveler-initials";
 import type { CSSProperties } from "react";
 import Link from "next/link";
 import { TripCoverArt } from "@/components/trip-cover-art";
@@ -26,7 +27,7 @@ function formatDate(value: string | null) {
   }).format(date);
 }
 
-export function SavedTripCard({ trip, index }: { trip: Trip; index: number }) {
+export function SavedTripCard({ trip, index, viewerName }: { trip: Trip; index: number; viewerName?: string }) {
   const destination = normalizeDestination(trip.destination ?? "");
   const start = formatDate(trip.start_date);
   const end = formatDate(trip.end_date);
@@ -51,6 +52,8 @@ export function SavedTripCard({ trip, index }: { trip: Trip; index: number }) {
           {trip.title?.trim() || "Untitled adventure"}
         </h3>
         {!trip.isOwner && <p className="mt-2 text-sm text-slate-500">Owned by {trip.ownerName || "another traveler"}</p>}
+        <div className="card-crew mt-4"><TravelerInitials name={trip.isOwner ? viewerName : trip.ownerName} /><span>{trip.isOwner ? 'Your adventure' : 'A shared adventure'}</span></div>
+        <p className="mt-3 text-xs text-slate-500">Open the itinerary to view feedback progress.</p>
         <Link href={`/trips/${trip.id}`} className="button-secondary mt-5">
           Open trip <span className="cta-arrow" aria-hidden="true">↗</span>
         </Link>

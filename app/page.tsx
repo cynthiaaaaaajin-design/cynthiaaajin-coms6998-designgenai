@@ -17,7 +17,7 @@ export default async function Home({
   return (
     <>
       <Header signedIn={!!user} />
-      <main className="page-shell">
+      <main className="page-shell mode-landing">
         <section className="hero">
           <div className="hero-copy">
             <div className="route-motif" aria-hidden="true" />
