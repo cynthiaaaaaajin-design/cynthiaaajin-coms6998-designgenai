@@ -1196,3 +1196,7 @@ body { font-family: var(--font-interface); }
 @media (max-width: 600px) { .trip-overview { padding: 16px; } }
 .trip-invitation { background: #fcfcfa; border: 1px solid #173d3826; border-radius: 14px; padding: 20px; }
 .trip-invitation input { font-size: 13px; }
+.destination-autoplay { position: absolute; top: 42px; right: 8px; border: 1px solid #ffffff70; border-radius: 12px; padding: 5px 9px; background: #173d38dc; color: white; font-size: 11px; }
+
+.trip-overview .overview-expand { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 10px 2px 0; margin-top: 4px; border-top: 1px solid #173d3820; font-size: 12px; font-weight: 700; color: #173D38; }
+.trip-overview .overview-expand:hover { color: #357165; }

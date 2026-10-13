@@ -21,7 +21,7 @@ export function DestinationCoverPhoto({ tripId, destination, fallback }: { tripI
     return () => { observer?.disconnect(); controller.abort(); };
   }, [tripId]);
   return <div className="destination-cover-photo" ref={container}>
-    {photo ? <><img src={photo.src} alt={`${destination} destination landscape`} onError={() => setPhoto(null)} />
+    {photo ? <><img src={photo.src} alt={`${photo.name || destination} destination landscape`} onError={() => setPhoto(null)} />
       <div className="destination-photo-credit"><span translate="no">Google Maps</span>{photo.authors.map((author, index) => <span key={index}> · {author.url ? <a href={author.url} target="_blank" rel="noopener noreferrer">{author.name}</a> : author.name}</span>)}</div>
     </> : fallback}
   </div>;

@@ -32,3 +32,31 @@ export function resolveTripCover(destination: string) {
   const place = normalizeDestination(destination);
   return { normalizedDestination: place.canonical, theme: place.theme, imageType: 'svg' as const, alt: `Abstract ${place.theme.replaceAll('-', ' ')} travel illustration for ${place.canonical}` };
 }
+
+// Commas may separate stops OR qualify a city (Lisbon, Portugal).
+// Country/state qualifiers stay attached; explicit arrows/semicolons delimit stops.
+const countryNames = new Set<string>(['usa', 'us', 'uk', 'uae', 'south korea', 'united states of america']);
+const countryDisplay = new Intl.DisplayNames(['en'], { type: 'region' });
+for (let a = 65; a <= 90; a++) for (let b = 65; b <= 90; b++) {
+  const code = String.fromCharCode(a, b);
+  const name = countryDisplay.of(code);
+  if (name && name !== code) countryNames.add(name.toLowerCase());
+}
+const states = new Set('Alabama|Alaska|Arizona|Arkansas|California|Colorado|Connecticut|Delaware|Florida|Georgia|Hawaii|Idaho|Illinois|Indiana|Iowa|Kansas|Kentucky|Louisiana|Maine|Maryland|Massachusetts|Michigan|Minnesota|Mississippi|Missouri|Montana|Nebraska|Nevada|New Hampshire|New Jersey|New Mexico|New York|North Carolina|North Dakota|Ohio|Oklahoma|Oregon|Pennsylvania|Rhode Island|South Carolina|South Dakota|Tennessee|Texas|Utah|Vermont|Virginia|Washington|West Virginia|Wisconsin|Wyoming'.toLowerCase().split('|'));
+export function destinationStops(input: string): string[] {
+  const explicit = input.split(/\s*(?:;|；|→|\n|\s+->\s+)\s*/u).filter(part => part.trim());
+  const result: string[] = [];
+  for (const group of explicit) {
+    if (normalizeDestination(group).theme !== 'generic') { result.push(normalizeDestination(group).canonical); continue; }
+    const parts = group.split(/[,，]/u).map(part => part.trim()).filter(Boolean);
+    const stops: string[] = [];
+    for (let i = 0; i < parts.length; i++) {
+      const value = parts[i].toLowerCase();
+      const qualifier = countryNames.has(value) || (states.has(value) && parts.slice(i + 1).some(part => ['usa', 'us', 'united states', 'united states of america'].includes(part.toLowerCase())));
+      if (qualifier && stops.length) stops[stops.length - 1] += `, ${parts[i]}`;
+      else stops.push(parts[i]);
+    }
+    result.push(...stops);
+  }
+  return [...new Set(result.map(stop => normalizeDestination(stop).canonical))];
+}

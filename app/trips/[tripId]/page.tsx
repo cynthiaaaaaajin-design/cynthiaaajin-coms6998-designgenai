@@ -1,3 +1,4 @@
+import { TripOverview } from "@/components/trip-overview";
 import { ItineraryNavigation } from "@/components/itinerary-navigation";
 import { GroupConsensus } from '@/components/group-consensus';
 import { PlanningHistory } from '@/components/planning-history';
@@ -156,17 +157,7 @@ export default async function TripDetail({ params, searchParams }: {
               </div>
             </div>}
             {!itemsError && items.length > 0 && <div className={`trip-summary-grid ${isCurrent ? 'with-consensus' : ''}`}>
-              <section className="trip-overview" aria-labelledby="trip-overview-title">
-                <p className="eyebrow">AT A GLANCE</p>
-                <h3 id="trip-overview-title">Trip overview</h3>
-                <ol aria-label="Daily itinerary overview">{days.map(day => (
-                  <li key={day}><a href={`#day-${day}`}>
-                    <strong>Day {day}</strong>
-                    <span>{items.filter(item => item.day_number === day).map(item => item.title).join(' → ')}</span>
-                    <span aria-hidden="true" className="overview-arrow">↗</span>
-                  </a></li>
-                ))}</ol>
-              </section>
+              <TripOverview key={version.id} days={days.map(day => ({ day, summary: items.filter(item => item.day_number === day).map(item => item.title).join(' → ') }))} />
               {isCurrent && <GroupConsensus itemIds={items.map(item => item.id)} feedback={feedbackError ? null : feedback} participants={participantIds} />}
             </div>}
             <PlanningHistory tripId={tripId} versions={versions} selectedId={version.id} reviews={planningReviews} />

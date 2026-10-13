@@ -52,3 +52,14 @@ const unsafe = renderToStaticMarkup(createElement(TripCoverArt, { destination: '
 assert.ok(!unsafe.includes('<script>'));
 const sceneMarkup = new Set(['beach','island','europe-city','asia-city','mountain','tropical','generic'].map(theme => renderToStaticMarkup(createElement(scenes.CoverScene, { theme }))));
 assert.equal(sceneMarkup.size, 7, 'Every shipped theme has a distinct illustration');
+for (const [input, expected] of [
+ ['Madrid, Seville, Guernica, Rome, Florence', ['Madrid','Seville','Guernica','Rome, Italy','Florence']],
+ ['Lisbon, Portugal', ['Lisbon, Portugal']],
+ ['Tokyo, Japan', ['Tokyo, Japan']],
+ ['Miami, Florida, USA', ['Miami, Florida, USA']],
+ ['Madrid, Spain; Rome, Italy', ['Madrid, Spain','Rome, Italy']],
+ ['Madrid → Seville → Madrid', ['Madrid','Seville']],
+ ['Puerto Rico', ['Puerto Rico']],
+ ['', []],
+]) assert.deepEqual(Array.from(destinations.destinationStops(input)), expected);
+console.log('PASS: ordered multi-city photo stops, city/country qualifiers, explicit separators and deduplication.');
