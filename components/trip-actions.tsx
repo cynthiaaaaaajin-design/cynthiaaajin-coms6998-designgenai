@@ -12,7 +12,7 @@ export function TripActions({ tripId }: { tripId: string }) {
     const crew = document.getElementById('travel-crew');
     if (crew instanceof HTMLDetailsElement) crew.open = true;
     crew?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    document.getElementById('traveler-email')?.focus({ preventScroll: true });
+    document.getElementById('create-trip-invitation')?.focus({ preventScroll: true });
   }
   async function copy() {
     try { await navigator.clipboard.writeText(`${window.location.origin}/trips/${tripId}`); setMessage('Link copied. Only travelers you have added can open it.'); }
@@ -30,7 +30,7 @@ export function TripActions({ tripId }: { tripId: string }) {
     finally { locked.current = false; setBusy(false); }
   }
   return <div className="trip-actions">
-    <div className="flex flex-wrap gap-3"><button className="button-primary" onClick={share}>Share trip</button><button className="button-secondary" onClick={copy}>Copy trip link</button><button className="button-secondary trip-delete" onClick={() => setConfirm(!confirm)} disabled={busy} aria-expanded={confirm}>Delete trip</button></div>
+    <div className="flex flex-wrap gap-3"><button className="button-primary" onClick={share}>Share trip</button><button className="button-secondary" onClick={copy}>Copy member-only link</button><button className="button-secondary trip-delete" onClick={() => setConfirm(!confirm)} disabled={busy} aria-expanded={confirm}>Delete trip</button></div>
     {confirm && <div className="delete-confirm" role="group" aria-label="Confirm trip deletion"><p className="font-semibold">Permanently delete this trip?</p><p className="mt-2 text-sm">This cannot be undone. You and your travelers will lose access to this saved trip.</p><div className="mt-3 flex flex-wrap gap-3"><button className="button-primary" disabled={busy} onClick={remove}>{busy ? 'Deleting…' : 'Yes, delete trip'}</button><button className="button-secondary" disabled={busy} onClick={() => setConfirm(false)}>Keep trip</button></div></div>}
     <p className="mt-3 text-sm break-words" role="status">{message}</p>
   </div>;

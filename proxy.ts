@@ -24,9 +24,10 @@ export async function proxy(request: NextRequest) {
   });
   await supabase.auth.getUser();
   response.headers.set("Cache-Control", "private, no-store");
+  response.headers.set("Referrer-Policy", "no-referrer");
   return response;
 }
 
 export const config = {
-  matcher: ["/", "/profile/:path*", "/trips/:path*", "/auth/:path*", "/api/trips/:path*"],
+  matcher: ["/", "/profile/:path*", "/trips/:path*", "/auth/:path*", "/api/trips/:path*", "/invite/:path*", "/api/invitations/:path*"],
 };

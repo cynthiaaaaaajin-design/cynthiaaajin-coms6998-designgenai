@@ -70,7 +70,7 @@ export default async function Home({
               [
                 "01",
                 "Create your trip",
-                "Choose your destination and dates, then add travelers who already use TripSync.",
+                "Choose your destination and dates, then invite your travel crew with a private link.",
               ],
               [
                 "02",

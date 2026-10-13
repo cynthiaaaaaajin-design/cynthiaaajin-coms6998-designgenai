@@ -36,3 +36,8 @@ for (const options of [{ exchangeError: true }, { signedOut: true }, { code: '' 
   assert.equal(url.pathname, '/'); assert.equal(url.searchParams.get('next'), '/trips/123'); assert.equal(url.searchParams.get('auth_error'), '1');
 }
 console.log('PASS: returning/new/incomplete profiles, intended shared-trip destinations, retry preservation, no-store responses, and external-redirect rejection. OAuth/session calls mocked.');
+
+const invitePath = '/invite/' + 'a'.repeat(64);
+assert.equal((await check({ next: invitePath, profile: null })).pathname, invitePath);
+assert.equal((await check({ next: invitePath, exchangeError: true })).searchParams.get('next'), invitePath);
+console.log('PASS: invitation destination preserved for new-user OAuth and failed-login retry.');

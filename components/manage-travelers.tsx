@@ -1,4 +1,5 @@
 'use client';
+import { TripInvitation } from '@/components/trip-invitation';
 import { TravelerInitials } from '@/components/traveler-initials';
 
 import { useRef, useState, type FormEvent } from 'react';
@@ -44,7 +45,7 @@ export function ManageTravelers({ tripId, ownerId, initialTravelers, loadError }
         }
       } else {
         setTravelers(current => current.filter(member => member.userId !== result.removedUserId));
-        setMessage('Traveler removed. Their feedback history is preserved.');
+        setMessage('Traveler removed. Their feedback history is preserved. Revoke the invitation link too if they should not rejoin.');
       }
       router.refresh();
     } catch (err) {
@@ -63,7 +64,9 @@ export function ManageTravelers({ tripId, ownerId, initialTravelers, loadError }
   return (
     <details id="travel-crew" className="settings-card crew-section crew-disclosure mt-8">
       <summary className="font-semibold"><span className="crew-heading"><span className="eyebrow">GOOD COMPANY</span><span className="crew-title">Your travel crew</span><span className="text-sm font-normal">Manage traveler access</span></span></summary>
-      <p className="mt-3 text-sm leading-6 text-slate-500">This trip is private. Only you and the travelers you add can open it. Travelers can view the itinerary and leave feedback; only you can generate or revise it.</p>
+      <p className="mt-3 text-sm leading-6 text-slate-500">This trip is private. Only you and travelers you add or who accept your invitation can open it. Travelers can view the itinerary and leave feedback; only you can generate or revise it.</p>
+      <TripInvitation tripId={tripId} />
+      <details className="mt-5"><summary className="text-sm font-semibold">Or add an existing traveler by email</summary>
       <form onSubmit={add} className="mt-5" aria-busy={busy === 'add'}>
         <label htmlFor="traveler-email">Add an existing TripSync traveler</label>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
@@ -71,7 +74,7 @@ export function ManageTravelers({ tripId, ownerId, initialTravelers, loadError }
           <button className="button-primary shrink-0" type="submit" disabled={busy !== null}>{busy === 'add' ? 'Adding traveler…' : 'Add traveler'}</button>
         </div>
         <p id="traveler-email-help" className="mt-2 text-xs text-slate-500">They must have signed in to TripSync before. Use their sign-in email. No invitation email is sent.</p>
-      </form>
+      </form></details>
       <div className="mt-4 text-sm" aria-live="polite">
         {error && <p role="alert" className="text-red-700">{error}</p>}
         {message && <p role="status" className="text-teal-800">{message}</p>}
@@ -94,7 +97,7 @@ export function ManageTravelers({ tripId, ownerId, initialTravelers, loadError }
           ))}
         </ul>
       )}
-      {!listError && !travelers.some(member => member.userId !== ownerId) && <p className="mt-3 text-sm text-slate-500">Only you have access. Add a traveler to plan together.</p>}
+      {!listError && !travelers.some(member => member.userId !== ownerId) && <p className="mt-3 text-sm text-slate-500">Only you have access. Share an invitation link to plan together.</p>}
     </details>
   );
 }

@@ -1194,3 +1194,5 @@ body { font-family: var(--font-interface); }
 .trip-summary-grid .consensus-header h3 { font-size: 24px; }
 @media (min-width: 1050px) { .trip-summary-grid.with-consensus { grid-template-columns: 1.15fr 1fr; } }
 @media (max-width: 600px) { .trip-overview { padding: 16px; } }
+.trip-invitation { background: #fcfcfa; border: 1px solid #173d3826; border-radius: 14px; padding: 20px; }
+.trip-invitation input { font-size: 13px; }
