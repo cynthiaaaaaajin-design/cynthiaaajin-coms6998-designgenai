@@ -1,3 +1,4 @@
+import { ItineraryNavigation } from "@/components/itinerary-navigation";
 import { GroupConsensus } from '@/components/group-consensus';
 import { PlanningHistory } from '@/components/planning-history';
 import { loadTripPeople } from '@/lib/trip-people';
@@ -117,7 +118,14 @@ export default async function TripDetail({ params, searchParams }: {
   return (
     <>
       <Header signedIn active="trips" />
-      <main className="page-shell mode-detail py-12" data-travel-theme={normalizeDestination(trip.destination ?? "").theme}>
+      {days.length > 0 && <ItineraryNavigation key={version?.id} days={days.map(day => {
+        const locations = items.filter(item => item.day_number === day).map(item => item.location?.trim()).filter((location): location is string => !!location);
+        // Match destination segments actually present in activity addresses; never invent a city.
+        const candidates = String(trip.destination ?? '').split(/[,;→]/).map(part => part.trim()).filter(Boolean);
+        const matched = candidates.filter(city => locations.some(location => location.toLocaleLowerCase().split(',').some(part => part.trim().toLocaleLowerCase() === city.toLocaleLowerCase())));
+        return { day, location: matched.slice(0, 2).join(' · ') || locations[0] || 'See activities' };
+      })} />}
+      <main id="trip-top" tabIndex={-1} className={`page-shell mode-detail py-12 ${days.length ? "has-day-navigation" : ""}`} data-travel-theme={normalizeDestination(trip.destination ?? "").theme}>
         <Link href="/trips" className="text-sm font-semibold text-teal-800">← Back to your trips</Link>
         <div className="dashboard-banner trip-detail-banner">
           <div className="min-w-0">
@@ -147,7 +155,20 @@ export default async function TripDetail({ params, searchParams }: {
                 <div className="feedback-progress-fill" style={{ transform: `scaleX(${items.filter(item => feedback[item.id]?.mine).length / items.length})` }} />
               </div>
             </div>}
-            {isCurrent && !itemsError && items.length > 0 && <GroupConsensus itemIds={items.map(item => item.id)} feedback={feedbackError ? null : feedback} participants={participantIds} />}
+            {!itemsError && items.length > 0 && <div className={`trip-summary-grid ${isCurrent ? 'with-consensus' : ''}`}>
+              <section className="trip-overview" aria-labelledby="trip-overview-title">
+                <p className="eyebrow">AT A GLANCE</p>
+                <h3 id="trip-overview-title">Trip overview</h3>
+                <ol aria-label="Daily itinerary overview">{days.map(day => (
+                  <li key={day}><a href={`#day-${day}`}>
+                    <strong>Day {day}</strong>
+                    <span>{items.filter(item => item.day_number === day).map(item => item.title).join(' → ')}</span>
+                    <span aria-hidden="true" className="overview-arrow">↗</span>
+                  </a></li>
+                ))}</ol>
+              </section>
+              {isCurrent && <GroupConsensus itemIds={items.map(item => item.id)} feedback={feedbackError ? null : feedback} participants={participantIds} />}
+            </div>}
             <PlanningHistory tripId={tripId} versions={versions} selectedId={version.id} reviews={planningReviews} />
             <ItineraryVersionSelector tripId={tripId} versions={versions} selectedId={version.id} />
             <p className="mt-3 text-sm text-slate-500">{isCurrent ? 'Your latest saved plan.' : 'An earlier saved plan. Feedback is read-only for this version.'} Check opening hours and availability before you go.</p>
@@ -163,7 +184,7 @@ export default async function TripDetail({ params, searchParams }: {
               </div>
             ) : days.map(day => (
               <section key={`${version.id}:${day}`} className="itinerary-version itinerary-day mt-8" aria-labelledby={`day-${day}`}>
-                <h3 id={`day-${day}`} className="day-label mb-4 text-lg font-semibold">DAY {String(day).padStart(2, '0')}</h3>
+                <h3 id={`day-${day}`} tabIndex={-1} className="day-label mb-4 text-lg font-semibold">DAY {String(day).padStart(2, '0')}</h3>
                 <ol className="itinerary-timeline">
                   {items.filter(item => item.day_number === day).map((item, index) => (
                     <li key={item.id} style={{ "--entrance-delay": `${Math.min(index, 4) * 30}ms` } as CSSProperties} className="activity-card timeline-activity">
@@ -203,6 +224,7 @@ export default async function TripDetail({ params, searchParams }: {
           key={`${tripId}:${travelersError}:${JSON.stringify(travelers)}`}
           tripId={tripId} ownerId={user.id} initialTravelers={travelers} loadError={travelersError}
         />}
+      <div id="trip-end" tabIndex={-1} className="trip-end-anchor"><span>End of trip</span><a href="#trip-top">Back to top ↑</a></div>
       </main>
     </>
   );
