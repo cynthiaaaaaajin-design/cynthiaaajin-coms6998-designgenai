@@ -50,7 +50,7 @@ export function SavedTripCard({ trip, index, viewerName }: { trip: Trip; index: 
           ? <DestinationCoverPhoto tripId={String(trip.id)} destination={destination.canonical} fallback={<TripCoverArt destination={trip.destination ?? ""} />} />
           : <TripCoverArt destination={trip.destination ?? ""} />}
         <span className="destination-label break-words">{destination.canonical}</span>
-        <span className="sample-label">{trip.isOwner ? "Owner" : "Shared with you"}</span>
+        <span className={`sample-label ${trip.isOwner ? "role-owner" : "role-shared"}`}>{trip.isOwner ? "Owner" : "Shared"}</span>
       </div>
       <div className="collection-card-body">
         <p className="eyebrow mb-2">{dates}</p>

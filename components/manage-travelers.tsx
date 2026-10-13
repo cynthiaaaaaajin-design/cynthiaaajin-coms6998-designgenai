@@ -32,7 +32,7 @@ export function ManageTravelers({ tripId, ownerId, initialTravelers, loadError }
       if (!response.ok) throw new Error(result.error || 'Traveler access could not be updated.');
       if (method === 'POST') {
         setEmail('');
-        setMessage(`${result.message} They can find this trip under Shared with me.`);
+        setMessage(`${result.message} They can find this trip in their Trip collection with a Shared label.`);
         // RPC returns a status only. Reload membership rows under existing RLS.
         try {
           const listResponse = await fetch(`/api/trips/${encodeURIComponent(tripId)}/members`, { cache: 'no-store' });
