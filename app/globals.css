@@ -765,6 +765,12 @@ body { font-family: var(--font-interface); }
 .mode-detail .itinerary-journal, .generation-section {
   background: var(--section-cream); padding: 32px; margin-top: 28px;
 }
+.generation-section {
+  background: #EDF3F5;
+  --section-accent: #62877f;
+  border-color: #173d3824;
+  border-top-color: var(--section-accent);
+}
 .itinerary-day {
   background: var(--surface-paper); border: 1px solid #8a79582b;
   border-radius: 18px; padding: 8px 24px 0; box-shadow: var(--surface-elevation);
