@@ -1,3 +1,4 @@
+import { DestinationCoverPhoto } from "@/components/destination-cover-photo";
 import { TravelerInitials } from "@/components/traveler-initials";
 import type { CSSProperties } from "react";
 import Link from "next/link";
@@ -6,6 +7,7 @@ import { normalizeDestination } from "@/lib/destinations";
 
 export type Trip = {
   id: string | number;
+  travelerCount?: number | null;
   isOwner: boolean;
   ownerName: string | null;
   title: string | null;
@@ -39,21 +41,25 @@ export function SavedTripCard({ trip, index, viewerName }: { trip: Trip; index: 
         : end
           ? `Until ${end}`
           : "Dates to be decided";
+  const today = new Date().toISOString().slice(0, 10);
+  const status = trip.end_date && trip.end_date < today ? 'Past trip' : trip.start_date && trip.end_date && trip.start_date <= today && trip.end_date >= today ? 'In progress' : trip.start_date && trip.start_date > today ? 'Upcoming' : 'Dates to confirm';
   return (
-    <article className="trip-card motion-card" style={{ "--entrance-delay": `${Math.min(index, 4) * 35}ms` } as CSSProperties}>
-      <div className="destination-art illustrated-cover">
-        <TripCoverArt destination={trip.destination ?? ""} />
+    <article className="trip-card motion-card collection-card" style={{ "--entrance-delay": `${Math.min(index, 4) * 35}ms` } as CSSProperties}>
+      <div className="destination-art illustrated-cover saved-trip-cover">
+        {(process.env.GOOGLE_MAPS_API_KEY || process.env.GOOGLE_PLACES_API_KEY)
+          ? <DestinationCoverPhoto tripId={String(trip.id)} destination={destination.canonical} fallback={<TripCoverArt destination={trip.destination ?? ""} />} />
+          : <TripCoverArt destination={trip.destination ?? ""} />}
         <span className="destination-label break-words">{destination.canonical}</span>
         <span className="sample-label">{trip.isOwner ? "Owner" : "Shared with you"}</span>
       </div>
-      <div className="p-6">
+      <div className="collection-card-body">
         <p className="eyebrow mb-2">{dates}</p>
         <h3 className="break-words text-xl font-semibold tracking-tight">
           {trip.title?.trim() || "Untitled adventure"}
         </h3>
         {!trip.isOwner && <p className="mt-2 text-sm text-slate-500">Owned by {trip.ownerName || "another traveler"}</p>}
-        <div className="card-crew mt-4"><TravelerInitials name={trip.isOwner ? viewerName : trip.ownerName} /><span>{trip.isOwner ? 'Your adventure' : 'A shared adventure'}</span></div>
-        <p className="mt-3 text-xs text-slate-500">Open the itinerary to view feedback progress.</p>
+        <div className="card-crew mt-4"><TravelerInitials name={trip.isOwner ? viewerName : trip.ownerName} /><span>{trip.travelerCount != null ? `${trip.travelerCount} ${trip.travelerCount === 1 ? 'traveler' : 'travelers'}` : trip.isOwner ? 'Your adventure' : 'A shared adventure'}</span></div>
+        <p className="collection-status">{status}</p>
         <Link href={`/trips/${trip.id}`} className="button-secondary mt-5">
           Open trip <span className="cta-arrow" aria-hidden="true">↗</span>
         </Link>

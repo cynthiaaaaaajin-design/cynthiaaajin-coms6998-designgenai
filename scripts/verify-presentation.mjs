@@ -12,14 +12,14 @@ function load(path, deps = {}) {
  const loaded = { exports: {} };
  const base = { react: React, 'react/jsx-runtime': jsx, 'next/link': link, 'next/navigation': nav, ...deps };
  const code = ts.transpileModule(readFileSync(path,'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText;
- vm.runInNewContext(code, { module: loaded, exports: loaded.exports, console: {info() {}, error() {}}, URL, require: name => { assert.ok(name in base,name); return base[name]; } });
+ vm.runInNewContext(code, { module: loaded, exports: loaded.exports, process: { env: {} }, console: {info() {}, error() {}}, URL, require: name => { assert.ok(name in base,name); return base[name]; } });
  return loaded.exports;
 }
 const destinations=load('lib/destinations.ts');
 const initials=load('components/traveler-initials.tsx');
 const scenes=load('components/trip-covers/scenes.tsx');
 const covers=load('components/trip-cover-art.tsx',{'@/lib/destinations':destinations,'@/components/trip-covers/scenes':scenes});
-const cards=load('components/saved-trip-card.tsx',{'@/components/traveler-initials':initials,'@/lib/destinations':destinations,'@/components/trip-cover-art':covers});
+const cards=load('components/saved-trip-card.tsx',{'@/components/destination-cover-photo':{DestinationCoverPhoto:({fallback})=>fallback},'@/components/traveler-initials':initials,'@/lib/destinations':destinations,'@/components/trip-cover-art':covers});
 const shared={id:'3',title:'Shared weekend',destination:'Tokyo',isOwner:false,ownerName:'Cynthia Jin',start_date:null,end_date:null};
 const sharedHtml=renderToStaticMarkup(React.createElement(cards.SavedTripCard,{trip:shared,index:0}));
 assert.match(sharedHtml,/Shared with you/);assert.match(sharedHtml,/Owned by Cynthia Jin/);assert.match(sharedHtml,/CJ/);assert.doesNotMatch(sharedHtml,/>Owner</);

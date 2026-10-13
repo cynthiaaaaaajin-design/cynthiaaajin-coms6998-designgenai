@@ -603,3 +603,45 @@ GOOGLE_MAPS_STATIC_API_KEY=your_server_maps_static_key
 Restrict the second key to Maps Static API. Neither key is sent to the browser. Restart locally or redeploy after configuring environment variables. Both APIs require appropriate billing/quota configuration. Resolution and map failures preserve the itinerary and Google Maps search links for every stop. All resolved markers use forest green; the map automatically frames their coordinates. The map is a static preview, not an interactive route planner.
 
 Requests use the existing owner/member access check and validate the selected version belongs to the trip. Place IDs, coordinates, and categories live only in the current response/page state; no schema changes or persistent Places-content cache are introduced. Maps retain Google's full attribution (no cropping). See [Maps Static API setup](https://developers.google.com/maps/documentation/maps-static/start) and [Places policies](https://developers.google.com/maps/documentation/places/web-service/policies).
+
+### Deployment troubleshooting and trip actions
+
+The trip owner now has Share trip, Copy trip link, and Delete trip actions directly below the destination hero. Share opens the existing traveler access form; copying the URL does not grant access. Delete requires explicit confirmation and performs one owner-filtered database delete under existing RLS. Database foreign-key or policy failures are reported without deleting child rows separately. Verify deletion with a disposable owner-created trip on the deployed schema; this change does not add or bypass delete policies/cascades.
+
+Places now activates when its server key is present unless `GOOGLE_PLACES_ENABLED=false` explicitly disables it. Static maps can reuse `GOOGLE_PLACES_API_KEY` if `GOOGLE_MAPS_STATIC_API_KEY` is absent; the shared key must permit both Places API (New) and Maps Static API. Upstream HTTP failures log only status codes, never keys. No-match, missing configuration, and unavailable previews have visible fallback messages.
+
+If production still shows “Skip” or the old “saved places” landing copy, check Vercel's Production branch and deployment commit against the pushed commit. Redeploying an older deployment does not incorporate newer source changes. Confirm the newest deployment is assigned to the production domain and includes the Production environment variables. Google ratings/reviews links only appear for successful place matches; no reviews are fabricated.
+
+### Owner deletion database repair (applied 2026-10-12)
+
+Live inspection confirmed `trips` had no DELETE policy, and all five trip/version/item foreign keys used RESTRICT. Applied `sql/trips-delete-owner.sql` to the existing Supabase project: owner-only DELETE policy, cascading trip-owned children, and a deferred NO ACTION parent-version reference (never cascade into another trip). Child-table RLS, authentication, and voting insertion rules are unchanged.
+
+Verified against the live database inside a rolled-back transaction with a new temporary trip, member, two linked versions, activity and vote. With the authenticated role and member identity deletion affected zero rows; with the owner identity it affected one row, and all fixture descendants were removed. Immediate constraint validation passed. No existing trip was deleted. Local and deployed clients using this database receive the fix immediately; deployment is not required for this SQL repair.
+
+### Destination hero photo carousel
+
+Set `GOOGLE_MAPS_API_KEY` in `.env.local` and Vercel (Production and Preview as needed), enable **Places API (New)** with billing, and restrict this server key to that API. Never use a `NEXT_PUBLIC_` variable. Restart local development or redeploy after adding the variable. Existing Gemini/Supabase/map variables are unchanged.
+
+The trip hero uses `DestinationHero` and `DestinationPhotoCarousel`. The authenticated `/api/trips/[tripId]/destination-photo?index=0` endpoint checks existing trip access and obtains the saved destination server-side. `lib/google-places.ts` normalizes it, uses Text Search (New) (`POST /v1/places:searchText`), then Place Details (`GET /v1/places/{id}`) for repeated destinations, and Place Photos (`GET /v1/places/{id}/photos/{photo}/media`). Field masks contain only id, displayName and photos. Media is fetched server-side without forwarding the key to the media host; no upstream error bodies are exposed.
+
+Up to five slides load on demand, with native keyboard-accessible previous/next buttons and dots, visible author credits, reduced-motion support and original hero dimensions. Missing key, unknown/mismatched destination, quota, missing photos, and media errors retain the existing illustration. This only changes the trip-detail hero.
+
+Caching: a bounded process-local map retains only place IDs by normalized destination for up to 30 days (256 entries; resets on restart/serverless cold start). Photo references and responses use no-store; no Next revalidation of photos, database migration or persistent media cache. Loaded slides stay in the mounted carousel so rerenders/navigation between loaded slides do not call Google again. Google prohibits caching photo names: https://developers.google.com/maps/documentation/places/web-service/place-photos
+
+`node scripts/verify-destination-photos.mjs` mocks Puerto Rico, Lisbon, Tokyo, Miami and an unknown destination, along with quota, missing key/photos, key isolation, unsafe media rejection and ID reuse. Actual destination photos and browser visuals require live verification with the configured key.
+
+Destination hero key compatibility: `GOOGLE_MAPS_API_KEY` is preferred, but the carousel also accepts the existing server-only `GOOGLE_PLACES_API_KEY` when the former is absent. No duplicate local key is required. Dashboard cards still use illustrations; the photo carousel is scoped to trip-detail heroes.
+
+### Collection, consensus and planning-history UI
+
+Dashboard cards use destination-specific Places photography with illustrations on failure. Desktop QA measured about 65% photo area per card. Traveler totals come from the existing authorized participant-display RPC; unavailable totals use an identity label, not an invented number. Status is date-based (Upcoming, In progress, Past trip, Dates to confirm), never approval-based.
+
+The latest itinerary's Group Consensus uses existing latest-per-user/activity vote summaries, filtered again against current authorized participants. “Activities reviewed” means at least one participant responded; full completion is responses divided by (authorized participants including owner × activities). Like/Dislike activity totals can overlap; mixed activities are labeled. No approval workflow is implied. Participant/feedback failures show unavailable progress. No schema changes are needed; the existing `trip_participant_display` RPC must be available for authoritative participant totals.
+
+Planning history lists real version creation times in UTC, AI/manual source labels, links to earlier versions, and each version's currently stored participant feedback counts. It retains the version selector. It does not claim that those votes are a historical snapshot of the feedback used to generate a revision; the current data does not establish that snapshot.
+
+Day maps use Google Static Maps at explicit center/zoom with matching Mercator-positioned, keyboard-accessible HTML marker buttons. Category icons/colors use Places primaryType (food, stay, attraction/other). Marker numbers and lists retain itinerary order; selecting a marker shows its name/category and Google Maps link. Unknown coordinates are omitted. No routes are invented, and no new browser API key or Maps JavaScript API is needed. Base-map panning/zooming is not implemented. Co-located stops may overlap; all places remain accessible in the ordered list.
+
+Trip-detail photo carousel supports horizontal mobile swipes without blocking vertical page scrolling. The new Forest/Sage/Mist/Ivory/Coral palette preserves the two-font system and existing destination hero themes.
+
+Verification: production build, TypeScript, lint and all verification scripts passed (public-route checks run against production build, because Next development redirects use different cache headers). Added consensus tests for duplicate/replaced votes, removed members, denominator/empty states, and map projection/category tests. Live owner browser checks: destination card photos, traveler counts, history data, second carousel photo, restaurant marker details and 390px overflow. Physical-device swipe, member account end-to-end interaction, and live hotel marker examples remain manual checks. No live votes, sharing changes, generation or database mutations were performed for this UI iteration.

@@ -16,12 +16,13 @@ async function check({user=true, access=true, version=true, enabled=true, matche
     const chain={select(){return chain},eq(field,value){filters.push([table,field,value]);return chain},maybeSingle:async()=>({data:version?{id:versionId}:null}),order:async()=>({data:[{id:'item',title:'Museum',location:'Lisbon'}]})};return chain;
   }};
   const route=load('app/api/trips/[tripId]/day-map/route.ts', {
+    '@/lib/day-map-layout':load('lib/day-map-layout.ts'),
     '@/lib/supabase/server':{createClient:async()=>client},
     '@/lib/feedback-server':{accessibleTrip:async()=>access?{destination:'Lisbon'}:null},
     '@/lib/itinerary':load('lib/itinerary.ts'),
     '@/lib/places':{placesEnabled:()=>enabled,resolvePlace:async(...args)=>{resolved++;assert.equal(args[3],true);return matched?{id:'place',name:'Museum',coordinates:{lat:38.7,lng:-9.1}}:null;}},
   },{process:{env:{GOOGLE_MAPS_STATIC_API_KEY:key?'server-secret':undefined}},fetch:async(url,options)=>{
-    requested++;assert.equal(url.hostname,'maps.googleapis.com');assert.equal(options.cache,'no-store');assert.match(url.searchParams.get('markers'),/38.7,-9.1/);
+    requested++;assert.equal(url.hostname,'maps.googleapis.com');assert.equal(options.cache,'no-store');assert.ok(url.searchParams.get('center'));assert.ok(url.searchParams.get('zoom'));assert.equal(url.searchParams.has('path'),false);
     return new Response(mapOK?new Uint8Array([137,80,78,71]):'denied',{status:mapOK?200:403,headers:{'content-type':mapOK?'image/png':'text/plain'}});
   }});
   const response=await route.GET(new Request(`https://trip.test/api/trips/1/day-map?version=${versionId}&day=${day}`),{params:Promise.resolve({tripId:'1'})});

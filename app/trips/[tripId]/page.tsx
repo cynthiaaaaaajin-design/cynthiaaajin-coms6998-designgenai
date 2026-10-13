@@ -1,8 +1,13 @@
+import { GroupConsensus } from '@/components/group-consensus';
+import { PlanningHistory } from '@/components/planning-history';
+import { loadTripPeople } from '@/lib/trip-people';
+import { loadPlanningReviews } from '@/lib/planning-history-server';
+import { TripActions } from "@/components/trip-actions";
 import { DayMap } from "@/components/day-map";
 import { PlaceEnrichment } from "@/components/place-enrichment";
 import { placesEnabled } from "@/lib/places";
 import { RepairItineraryButton } from '@/components/repair-itinerary-button';
-import { TripCoverArt } from "@/components/trip-cover-art";
+import { DestinationHero } from "@/components/destination-hero";
 import { normalizeDestination } from "@/lib/destinations";
 import type { CSSProperties } from 'react';
 import Link from 'next/link';
@@ -101,6 +106,13 @@ export default async function TripDetail({ params, searchParams }: {
     generationIssue = error instanceof Error ? error.message : 'Check this trip’s dates.';
   }
   const days = [...new Set(items.map(item => item.day_number))];
+  const people = await loadTripPeople(supabase, tripId).catch(() => null);
+  const participantIds = people ? [...new Set([trip.user_id, ...people.map(person => person.user_id)])] : null;
+  let planningReviews: Record<string, { reviewed: number; total: number }> | null = null;
+  if (participantIds && !versionError) {
+    try { planningReviews = await loadPlanningReviews(supabase, versions.map(entry => entry.id), participantIds); }
+    catch { /* History enrichment must not prevent reading the itinerary. */ }
+  }
 
   return (
     <>
@@ -114,8 +126,10 @@ export default async function TripDetail({ params, searchParams }: {
             <p className="mt-4 break-words text-lg text-slate-600">{normalizeDestination(trip.destination ?? '').canonical}</p>
             <p className="mt-2 text-sm text-slate-500">{formatDate(trip.start_date)} – {formatDate(trip.end_date)}</p>
           </div>
-          <div className="trip-detail-cover"><TripCoverArt destination={trip.destination ?? ""} /></div>
+          <div className="trip-detail-cover"><DestinationHero tripId={tripId} destination={trip.destination ?? ""} /></div>
         </div>
+        {isOwner && <TripActions tripId={tripId} />}
+        {isOwner && !placesEnabled() && <p className="notice mt-4">Google place details and map previews are not enabled for this deployment. Configure the server Places API key to enable them; your itinerary and place search links remain available.</p>}
         {versionError ? (
           <div className="notice mt-8" role="alert">Your saved itinerary could not be loaded. Refresh to try again. Generation is unavailable until we can check existing versions.</div>
         ) : version ? (
@@ -133,6 +147,8 @@ export default async function TripDetail({ params, searchParams }: {
                 <div className="feedback-progress-fill" style={{ transform: `scaleX(${items.filter(item => feedback[item.id]?.mine).length / items.length})` }} />
               </div>
             </div>}
+            {isCurrent && !itemsError && items.length > 0 && <GroupConsensus itemIds={items.map(item => item.id)} feedback={feedbackError ? null : feedback} participants={participantIds} />}
+            <PlanningHistory tripId={tripId} versions={versions} selectedId={version.id} reviews={planningReviews} />
             <ItineraryVersionSelector tripId={tripId} versions={versions} selectedId={version.id} />
             <p className="mt-3 text-sm text-slate-500">{isCurrent ? 'Your latest saved plan.' : 'An earlier saved plan. Feedback is read-only for this version.'} Check opening hours and availability before you go.</p>
             {!isCurrent && <Link href={`/trips/${tripId}`} className="button-secondary mt-4">Back to current itinerary</Link>}
@@ -156,6 +172,7 @@ export default async function TripDetail({ params, searchParams }: {
                         <h4 className="break-words text-lg font-semibold">{item.title}</h4>
                         {item.location && <p className="mt-1 break-words text-sm font-medium text-teal-800">{item.location}</p>}
                         {item.description && <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6 text-slate-600">{item.description}</p>}
+                        <div className="activity-support-layout">
                         {placesEnabled() && <PlaceEnrichment tripId={tripId} itemId={item.id} />}
                         <ActivityFeedback
                           key={`${item.id}:${user.id}:${feedbackError ? 'unavailable' : JSON.stringify(feedback[item.id] ?? emptyFeedback())}`}
@@ -165,6 +182,7 @@ export default async function TripDetail({ params, searchParams }: {
                           readOnly={!isCurrent}
                           initialSummary={feedbackError ? null : feedback[item.id] ?? emptyFeedback()}
                         />
+                        </div>
                       </div>
                     </li>
                   ))}

@@ -7,7 +7,7 @@ export const PLACES_FIELDS = [
   'places.googleMapsLinks.placeUri', 'places.googleMapsLinks.directionsUri', 'places.googleMapsLinks.reviewsUri',
 ].join(',');
 export function placesEnabled() {
-  return process.env.GOOGLE_PLACES_ENABLED === 'true' && !!process.env.GOOGLE_PLACES_API_KEY;
+  return process.env.GOOGLE_PLACES_ENABLED !== 'false' && !!process.env.GOOGLE_PLACES_API_KEY;
 }
 export function safeGoogleLink(value: unknown): string | undefined {
   if (typeof value !== 'string') return;
@@ -62,11 +62,11 @@ export async function resolvePlace(title: string, location: string | null, desti
   const key = process.env.GOOGLE_PLACES_API_KEY!;
   try {
     const response = await fetch('https://places.googleapis.com/v1/places:searchText', {
-      method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': key, 'X-Goog-FieldMask': mapOnly ? 'places.id,places.displayName,places.formattedAddress,places.location,places.primaryTypeDisplayName,places.attributions,places.googleMapsLinks.placeUri' : PLACES_FIELDS },
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': key, 'X-Goog-FieldMask': mapOnly ? 'places.id,places.displayName,places.formattedAddress,places.location,places.primaryTypeDisplayName,places.primaryType,places.attributions,places.googleMapsLinks.placeUri' : PLACES_FIELDS },
       body: JSON.stringify({ textQuery: [title, location, destination].filter(Boolean).join(', ').slice(0, 700), pageSize: 3, languageCode: 'en' }),
       cache: 'no-store', signal: AbortSignal.timeout(4500), redirect: 'error',
     });
-    if (!response.ok) return null;
+    if (!response.ok) { console.warn('[Places lookup]', { status: response.status }); return null; }
     const data = await response.json();
     if (!Array.isArray(data.places)) return null;
     const match = data.places.find((place: { id?: string; displayName?: { text?: string } }) =>
@@ -80,6 +80,7 @@ export async function resolvePlace(title: string, location: string | null, desti
       id: match.id, name,
       coordinates: Number.isFinite(match.location?.latitude) && Math.abs(match.location.latitude) <= 90 && Number.isFinite(match.location?.longitude) && Math.abs(match.location.longitude) <= 180 ? { lat: match.location.latitude, lng: match.location.longitude } : undefined,
       category: text(match.primaryTypeDisplayName?.text) || undefined,
+      categoryType: text(match.primaryType) || undefined,
       address: text(match.formattedAddress),
       rating: typeof match.rating === 'number' && match.rating >= 0 && match.rating <= 5 ? match.rating : undefined,
       reviewCount: Number.isInteger(match.userRatingCount) && match.userRatingCount >= 0 ? match.userRatingCount : undefined,

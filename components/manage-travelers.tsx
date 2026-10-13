@@ -61,7 +61,7 @@ export function ManageTravelers({ tripId, ownerId, initialTravelers, loadError }
   }
 
   return (
-    <details className="settings-card crew-section crew-disclosure mt-8">
+    <details id="travel-crew" className="settings-card crew-section crew-disclosure mt-8">
       <summary className="font-semibold"><span className="crew-heading"><span className="eyebrow">GOOD COMPANY</span><span className="crew-title">Your travel crew</span><span className="text-sm font-normal">Manage traveler access</span></span></summary>
       <p className="mt-3 text-sm leading-6 text-slate-500">This trip is private. Only you and the travelers you add can open it. Travelers can view the itinerary and leave feedback; only you can generate or revise it.</p>
       <form onSubmit={add} className="mt-5" aria-busy={busy === 'add'}>

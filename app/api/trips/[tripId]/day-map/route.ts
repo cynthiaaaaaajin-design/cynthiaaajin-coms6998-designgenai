@@ -1,3 +1,4 @@
+import { dayMapLayout } from '@/lib/day-map-layout';
 import { createClient } from '@/lib/supabase/server';
 import { accessibleTrip } from '@/lib/feedback-server';
 import { validTripId } from '@/lib/itinerary';
@@ -23,7 +24,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ trip
     if (version.error || !version.data) return json({}, 404);
     const items = await supabase.from('itinerary_items').select('id,title,location').eq('version_id', versionId).eq('day_number', day).order('position');
     if (items.error) return json({}, 503);
-    if (!placesEnabled()) return json({ places: [], image: null });
+    if (!placesEnabled()) return json({ places: [], image: null, status: 'not_configured' });
     // Resolve only saved activities, never arbitrary client-provided search strings.
     const places = [];
     const rows = items.data ?? [];
@@ -33,27 +34,26 @@ export async function GET(request: Request, { params }: { params: Promise<{ trip
       }))));
     }
     let image: string | null = null;
-    const key = process.env.GOOGLE_MAPS_STATIC_API_KEY;
+    const key = process.env.GOOGLE_MAPS_STATIC_API_KEY || process.env.GOOGLE_PLACES_API_KEY;
     const markers = places.filter(entry => entry.place?.coordinates);
-    if (key && markers.length) {
+    const layout = dayMapLayout(markers.map(entry => ({ itemId: entry.itemId, ...entry.place!.coordinates!, categoryType: entry.place!.categoryType })));
+    if (key && layout) {
       try {
         const url = new URL('https://maps.googleapis.com/maps/api/staticmap');
         url.searchParams.set('key', key);
         url.searchParams.set('size', '640x360');
         url.searchParams.set('scale', '2');
         url.searchParams.set('format', 'png');
-        // Automatic bounds include every resolved stop; no misleading route line.
-        for (const entry of markers) {
-          const { lat, lng } = entry.place!.coordinates!;
-          url.searchParams.append('markers', `color:0x1D4A43|${lat},${lng}`);
-        }
+        url.searchParams.set('center', `${layout.center.lat},${layout.center.lng}`);
+        url.searchParams.set('zoom', String(layout.zoom));
         const response = await fetch(url, { cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(7000) });
+        if (!response.ok) console.warn('[Day map]', { status: response.status });
         if (response.ok && response.headers.get('content-type')?.startsWith('image/png') && !response.headers.get('x-staticmap-api-warning')) {
           const bytes = await response.arrayBuffer();
           if (bytes.byteLength <= 3000000) image = `data:image/png;base64,${Buffer.from(bytes).toString('base64')}`;
         }
       } catch { /* Place links remain useful when the map service is unavailable. */ }
     }
-    return json({ places, image });
+    return json({ places, image, layout: image ? layout : null, status: image ? 'ready' : !markers.length ? 'no_matches' : !key ? 'not_configured' : 'unavailable' });
   } catch { return json({ places: [], image: null }); }
 }

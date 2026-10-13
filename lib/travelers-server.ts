@@ -48,7 +48,7 @@ export async function loadPrivateTrips(supabase: Client, userId: string) {
     for (const row of data) sharedIds.add(row.trip_id);
     memberCursor = data[data.length - 1].trip_id;
   }
-  const trips: { isOwner: boolean; ownerName: string | null; id: string; title: string | null; destination: string | null; start_date: string | null; end_date: string | null }[] = [];
+  const trips: { travelerCount?: number | null; isOwner: boolean; ownerName: string | null; id: string; title: string | null; destination: string | null; start_date: string | null; end_date: string | null }[] = [];
   let cursor: string | undefined;
   while (true) {
     let query = supabase.from('trips').select('id::text,user_id,title,destination,start_date,end_date')
@@ -65,8 +65,10 @@ export async function loadPrivateTrips(supabase: Client, userId: string) {
     }
     cursor = data[data.length - 1].id;
   }
-  await Promise.all(trips.filter(trip => !trip.isOwner).map(async trip => {
-    const owner = (await loadTripPeople(supabase, trip.id))?.find(person => person.is_owner);
+  await Promise.all(trips.map(async trip => {
+    const people = await loadTripPeople(supabase, trip.id).catch(() => null);
+    trip.travelerCount = people ? new Set(people.map(person => person.user_id)).size : null;
+    const owner = people?.find(person => person.is_owner);
     trip.ownerName = owner ? personName(owner) : null;
   }));
   const today = new Date().toISOString().slice(0, 10);
