@@ -19,6 +19,10 @@ for (const patch of [{ title: ' ' }, { destination: ' ' }, { end_date: '2026-11-
   assert.throws(() => validation.parseNewTrip({ ...valid, ...patch }));
 }
 assert.doesNotThrow(() => validation.parseNewTrip({ ...valid, end_date: valid.start_date }));
+assert.doesNotThrow(() => validation.parseNewTrip({ ...valid, end_date: '2026-12-30' }));
+assert.throws(() => validation.parseNewTrip({ ...valid, end_date: '2026-12-31' }), /30 days/);
+assert.doesNotThrow(() => validation.parseNewTrip({ ...valid, start_date: '2028-02-01', end_date: '2028-03-01' }));
+assert.throws(() => validation.parseNewTrip({ ...valid, start_date: '2028-02-01', end_date: '2028-03-02' }), /30 days/);
 async function scenario(options = {}) {
   const writes = [];
   const client = {
@@ -41,7 +45,7 @@ assert.equal(success.body.tripId, '9223372036854775807');
 assert.equal(success.writes[0].user_id, 'verified-owner');
 assert.equal(Object.keys(success.writes[0]).length, 5);
 assert.equal('is_public' in success.writes[0], false);
-for (const [options, status] of [[{ signedOut: true }, 401], [{ authError: true }, 401], [{ foreign: true }, 403], [{ raw: '{' }, 400], [{ input: { ...valid, end_date: '2026-01-01' } }, 400]]) {
+for (const [options, status] of [[{ signedOut: true }, 401], [{ authError: true }, 401], [{ foreign: true }, 403], [{ raw: '{' }, 400], [{ input: { ...valid, end_date: '2026-01-01' } }, 400], [{ input: { ...valid, end_date: '2026-12-31' } }, 400]]) {
   const result = await scenario(options); assert.equal(result.status, status); assert.equal(result.writes.length, 0);
 }
 for (const options of [{ denied: true }, { noRow: true }]) assert.equal((await scenario(options)).status, 500);

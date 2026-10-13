@@ -32,6 +32,6 @@ for(const trips of [[],[shared]]){
 }
 const feedback=load('components/activity-feedback.tsx');
 const props={tripId:'3',itemId:'item',title:'Walk',initialSummary:{likes:1,dislikes:0,mine:{value:1,comment:'Lovely'},group:[{userId:'viewer',name:'Yuxin',value:1,comment:'Lovely'}]}};
-const html=renderToStaticMarkup(React.createElement(feedback.ActivityFeedback,props));assert.match(html,/GROUP PULSE/);assert.match(html,/YOUR TAKE/);assert.match(html,/Skip \(Dislike\)/);assert.match(html,/Traveler feedback/);
+const html=renderToStaticMarkup(React.createElement(feedback.ActivityFeedback,props));assert.match(html,/GROUP FEEDBACK/);assert.match(html,/YOUR FEEDBACK/);assert.match(html,/>Dislike<\/button>/);assert.doesNotMatch(html,/Skip/);assert.match(html,/Traveler feedback/);
 const history=renderToStaticMarkup(React.createElement(feedback.ActivityFeedback,{...props,readOnly:true}));assert.doesNotMatch(history,/<form/);assert.match(history,/Lovely/);
 console.log('PASS: real component rendering for owned/shared cards, empty/shared dashboards, identity fallbacks, group/personal feedback, and read-only history. No invented totals.');

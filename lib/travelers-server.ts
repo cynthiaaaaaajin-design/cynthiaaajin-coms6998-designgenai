@@ -69,5 +69,13 @@ export async function loadPrivateTrips(supabase: Client, userId: string) {
     const owner = (await loadTripPeople(supabase, trip.id))?.find(person => person.is_owner);
     trip.ownerName = owner ? personName(owner) : null;
   }));
-  return trips.sort((a, b) => (a.start_date ?? '9999').localeCompare(b.start_date ?? '9999'));
+  const today = new Date().toISOString().slice(0, 10);
+  return trips.sort((a, b) => {
+    const aPast = (a.end_date ?? a.start_date ?? '9999') < today;
+    const bPast = (b.end_date ?? b.start_date ?? '9999') < today;
+    if (aPast !== bPast) return aPast ? 1 : -1;
+    return aPast
+      ? (b.start_date ?? '').localeCompare(a.start_date ?? '')
+      : (a.start_date ?? '9999').localeCompare(b.start_date ?? '9999');
+  });
 }

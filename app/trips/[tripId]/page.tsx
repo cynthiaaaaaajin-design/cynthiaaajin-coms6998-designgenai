@@ -1,3 +1,6 @@
+import { DayMap } from "@/components/day-map";
+import { PlaceEnrichment } from "@/components/place-enrichment";
+import { placesEnabled } from "@/lib/places";
 import { RepairItineraryButton } from '@/components/repair-itinerary-button';
 import { TripCoverArt } from "@/components/trip-cover-art";
 import { normalizeDestination } from "@/lib/destinations";
@@ -35,7 +38,7 @@ export default async function TripDetail({ params, searchParams }: {
   if (!validTripId(tripId)) notFound();
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/');
+  if (!user) redirect(`/?next=${encodeURIComponent(`/trips/${tripId}`)}`);
 
   const trip = await accessibleTrip(supabase, tripId, user.id);
   if (!trip) notFound();
@@ -113,16 +116,12 @@ export default async function TripDetail({ params, searchParams }: {
           </div>
           <div className="trip-detail-cover"><TripCoverArt destination={trip.destination ?? ""} /></div>
         </div>
-        {isOwner && <ManageTravelers
-          key={`${tripId}:${travelersError}:${JSON.stringify(travelers)}`}
-          tripId={tripId} ownerId={user.id} initialTravelers={travelers} loadError={travelersError}
-        />}
         {versionError ? (
           <div className="notice mt-8" role="alert">Your saved itinerary could not be loaded. Refresh to try again. Generation is unavailable until we can check existing versions.</div>
         ) : version ? (
           <section className="itinerary-version itinerary-journal mt-10" aria-labelledby="itinerary-heading">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 id="itinerary-heading" className="text-2xl font-semibold">Your itinerary</h2>
+            <div className="section-heading flex flex-wrap items-center justify-between gap-3">
+              <div><p className="eyebrow">THE PLAN, DAY BY DAY</p><h2 id="itinerary-heading" className="mt-3 text-2xl font-semibold">Your itinerary</h2></div>
               <span key={version.id} className="pill version-badge">Version {version.version_number} · {version.source === 'manual' ? 'Manually edited' : 'AI generated'}</span>
             </div>
             {!isOwner && !feedbackError && !itemsError && items.length > 0 && <div className="my-5 max-w-md">
@@ -157,6 +156,7 @@ export default async function TripDetail({ params, searchParams }: {
                         <h4 className="break-words text-lg font-semibold">{item.title}</h4>
                         {item.location && <p className="mt-1 break-words text-sm font-medium text-teal-800">{item.location}</p>}
                         {item.description && <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6 text-slate-600">{item.description}</p>}
+                        {placesEnabled() && <PlaceEnrichment tripId={tripId} itemId={item.id} />}
                         <ActivityFeedback
                           key={`${item.id}:${user.id}:${feedbackError ? 'unavailable' : JSON.stringify(feedback[item.id] ?? emptyFeedback())}`}
                           tripId={tripId}
@@ -169,6 +169,7 @@ export default async function TripDetail({ params, searchParams }: {
                     </li>
                   ))}
                 </ol>
+                <DayMap tripId={tripId} versionId={version.id} day={day} destination={trip.destination ?? ""} items={items.filter(item => item.day_number === day)} />
               </section>
             ))}
           </section>
@@ -180,6 +181,10 @@ export default async function TripDetail({ params, searchParams }: {
             <p className="notice mt-4" role="alert">{generationIssue}</p>
           </section>
         ) : <GenerateItineraryForm tripId={tripId} />}
+        {isOwner && <ManageTravelers
+          key={`${tripId}:${travelersError}:${JSON.stringify(travelers)}`}
+          tripId={tripId} ownerId={user.id} initialTravelers={travelers} loadError={travelersError}
+        />}
       </main>
     </>
   );

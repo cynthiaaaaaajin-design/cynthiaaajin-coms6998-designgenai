@@ -31,7 +31,7 @@ export function ManageTravelers({ tripId, ownerId, initialTravelers, loadError }
       if (!response.ok) throw new Error(result.error || 'Traveler access could not be updated.');
       if (method === 'POST') {
         setEmail('');
-        setMessage(result.message);
+        setMessage(`${result.message} They can find this trip under Shared with me.`);
         // RPC returns a status only. Reload membership rows under existing RLS.
         try {
           const listResponse = await fetch(`/api/trips/${encodeURIComponent(tripId)}/members`, { cache: 'no-store' });
@@ -61,17 +61,16 @@ export function ManageTravelers({ tripId, ownerId, initialTravelers, loadError }
   }
 
   return (
-    <section className="settings-card crew-section mt-8" aria-labelledby="travelers-heading">
-      <p className="eyebrow">GOOD COMPANY</p>
-      <h2 id="travelers-heading" className="mt-3 text-2xl font-semibold">Your travel crew</h2>
+    <details className="settings-card crew-section crew-disclosure mt-8">
+      <summary className="font-semibold"><span className="crew-heading"><span className="eyebrow">GOOD COMPANY</span><span className="crew-title">Your travel crew</span><span className="text-sm font-normal">Manage traveler access</span></span></summary>
       <p className="mt-3 text-sm leading-6 text-slate-500">This trip is private. Only you and the travelers you add can open it. Travelers can view the itinerary and leave feedback; only you can generate or revise it.</p>
       <form onSubmit={add} className="mt-5" aria-busy={busy === 'add'}>
-        <label htmlFor="traveler-email">Invite a traveler by email</label>
+        <label htmlFor="traveler-email">Add an existing TripSync traveler</label>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <div className="flex-1"><input id="traveler-email" type="email" required maxLength={254} value={email} onChange={event => setEmail(event.target.value)} disabled={busy !== null} placeholder="friend@example.com" aria-describedby="traveler-email-help" /></div>
           <button className="button-primary shrink-0" type="submit" disabled={busy !== null}>{busy === 'add' ? 'Adding traveler…' : 'Add traveler'}</button>
         </div>
-        <p id="traveler-email-help" className="mt-2 text-xs text-slate-500">Use the email they signed in with. They need an existing TripSync account. No invitation email is sent.</p>
+        <p id="traveler-email-help" className="mt-2 text-xs text-slate-500">They must have signed in to TripSync before. Use their sign-in email. No invitation email is sent.</p>
       </form>
       <div className="mt-4 text-sm" aria-live="polite">
         {error && <p role="alert" className="text-red-700">{error}</p>}
@@ -96,6 +95,6 @@ export function ManageTravelers({ tripId, ownerId, initialTravelers, loadError }
         </ul>
       )}
       {!listError && !travelers.some(member => member.userId !== ownerId) && <p className="mt-3 text-sm text-slate-500">Only you have access. Add a traveler to plan together.</p>}
-    </section>
+    </details>
   );
 }

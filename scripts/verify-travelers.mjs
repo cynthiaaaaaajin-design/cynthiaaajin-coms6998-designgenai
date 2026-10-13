@@ -137,8 +137,8 @@ const listClient = {
       gt() { after = true; return chain; },
       then(resolve, reject) {
         const data = after ? [] : table === 'trip_members' ? [{ trip_id: '2' }] : [
-          { id: '1', user_id: ownerId, title: 'Owned', start_date: '2026-10-10' },
-          { id: '2', user_id: travelerId, title: 'Shared', start_date: '2026-10-11' },
+          { id: '1', user_id: ownerId, title: 'Owned', start_date: '2999-10-10' },
+          { id: '2', user_id: travelerId, title: 'Shared', start_date: '2000-10-11' },
           { id: '3', user_id: travelerId, title: 'Private outsider trip', start_date: '2026-10-12' },
         ];
         return Promise.resolve({ data }).then(resolve, reject);

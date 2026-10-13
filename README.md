@@ -32,7 +32,7 @@ The dashboard reads `id`, `user_id`, `title`, `destination`, `start_date`, and `
    - `http://localhost:3000/auth/callback`
    - `https://YOUR-EXISTING-VERCEL-DOMAIN/auth/callback`
    - Any preview domain you actually test, ending in `/auth/callback`.
-2. Keep the existing Google provider configuration. Google's authorized redirect URI remains the Supabase provider callback (`https://YOUR-PROJECT.supabase.co/auth/v1/callback`). That is distinct from this app's `/auth/callback`, which exchanges the code then redirects to `/profile`.
+2. Keep the existing Google provider configuration. Google's authorized redirect URI remains the Supabase provider callback (`https://YOUR-PROJECT.supabase.co/auth/v1/callback`). That is distinct from this app's `/auth/callback`, which exchanges the code, then returns to an intended trip or routes complete profiles to `/trips` and incomplete profiles to `/profile`.
 3. Verify RLS permits authenticated users to read/update only their own profile. Check existing policies before adding anything. A client-side `.eq("id", user.id)` does not replace RLS.
 4. Verify Storage policies allow upload/read/delete inside `avatars/<user-id>/`. Upload uses a fresh UUID filename, with no overwrite. Reads use signed URLs; a private bucket is supported. DELETE is used for best-effort cleanup if a profile update fails after an upload. Existing successful avatar versions are retained to avoid deleting referenced files.
 5. In the existing avatars bucket, recommended server-enforced restrictions are 5 MB and MIME types `image/jpeg`, `image/png`, `image/webp`. The UI validates these too; bucket rules enforce them for direct API requests.
@@ -81,7 +81,7 @@ References: [Supabase SSR](https://supabase.com/docs/guides/auth/server-side/nex
 ## Exact acceptance test
 
 1. **Protected access:** Start `npm run dev`. In a fresh private browser window visit `http://localhost:3000/trips`. Expect a redirect to `/`, without trip content. `/profile` also redirects home.
-2. **Google login:** Click **Continue with Google**, complete Google consent, and observe the return through `/auth/callback` to `/profile`. Refresh `/profile`; you should remain signed in. Cancel consent once to verify the homepage displays a retry message.
+2. **Google login:** Click **Continue with Google**, complete Google consent, and observe the return through `/auth/callback` to `/trips` for a complete profile or `/profile` for an incomplete profile. A shared-trip link takes priority and returns to that trip. Refresh `/profile`; you should remain signed in. Cancel consent once to verify the homepage displays a retry message.
 3. **Profile creation:** Use a Google account that has never signed into this Supabase project. In Supabase Authentication, find its user UUID. In Table Editor → profiles, verify exactly one row has that ID. This row comes from the existing trigger. If either name is null/empty, the profile page must show **Let’s complete your profile**. If your trigger populates both names, this prompt correctly does not appear. An existing account does not fire the new-user trigger again.
 4. **Names:** Enter first and last names; click **Save changes**. Expect success and removal of the completion prompt. Refresh and verify the same values in both UI and the profile row. Test spaces-only names: saving must fail with a clear prompt.
 5. **Photo:** Choose a JPG, PNG, or WebP under 5 MB. In the crop modal, drag the image and adjust the zoom slider. Click **Cancel** once and confirm the existing avatar is unchanged; select the same image again, adjust the circular crop, then click **Use photo**. The preview updates immediately and the cropped photo is uploaded without requiring the name fields to be saved. Verify the photo appears after refresh. In Storage → avatars, find `<user-id>/<uuid>.<extension>`. In profiles, verify `avatar_url` stores only that path, never binary data or an expiring signed URL. Try an oversized image; expect rejection. Sign out and back in to verify the saved photo remains accessible.
@@ -96,7 +96,7 @@ Google consent and authenticated database/storage operations require a real acco
 - `app/page.tsx`: TripSync landing page, Google entry point, OAuth error message.
 - `app/layout.tsx`: product metadata and system typography (no build-time font download).
 - `app/globals.css`: responsive travel UI, cards, forms, and focus states.
-- `app/auth/callback/route.ts`: OAuth code exchange, fixed `/profile` redirect, explicit no-store response headers.
+- `app/auth/callback/route.ts`: OAuth code exchange, validated trip destination and profile-aware redirect, explicit no-store response headers.
 - `app/profile/page.tsx`: server auth check, profile query, signed avatar URL.
 - `app/profile/profile-form.tsx`: validated names, crop-before-upload flow, immediate photo preview, and independent avatar persistence.
 - `app/trips/page.tsx`: server-protected dashboard listing owned/member trips, with empty/error states.
@@ -516,3 +516,90 @@ MY TRIPS, and is hidden from unrelated accounts. Generate with budget/preference
 and verify Version 1. Try missing fields and reversed dates; neither should insert.
 
 Repair regression checks: `node scripts/verify-repair.mjs` (mocked Supabase/Gemini; no live mutations). Repair diagnostics use `[Itinerary repair]` and include stage, method (`saved_response` or `saved_prompt`), and outcome without prompts or model response bodies.
+
+## Week 5 P0 verification
+
+The itinerary precedes a collapsed owner-only crew section. Group feedback and comments
+expand on demand; Like/Dislike choices remain drafts until Submit feedback performs the
+existing insert. Trip creation validates the inclusive 30-day limit in the shared parser
+before any database insert. Upcoming/ongoing trips precede past trips; undated trips
+remain ahead of past trips. No schema, RLS, Gemini, or vote-storage changes are required.
+
+Additional regression checks:
+
+```sh
+node scripts/verify-auth-redirects.mjs
+node scripts/verify-create-trip.mjs
+node scripts/verify-public-routes.mjs http://localhost:3001
+```
+
+Authentication regression checks mock OAuth and profile responses; they do not establish
+live provider configuration or session persistence. Before submission, verify on the
+actual deployment with two accounts: returning login reaches Trips; an incomplete
+profile reaches Profile; signed-out shared-trip login (including cancel/retry) returns
+to the original trip; a member can save/reload feedback but cannot manage the crew;
+an owner can generate/revise and manage travelers. Verify the callback URL with its
+`next` query is accepted by the existing Supabase redirect allowlist. Check 30-day
+creation succeeds and 31-day creation is blocked near the date fields. Repeat the
+feedback selection/save/comment flow on desktop and mobile.
+
+## Optional Google Places enrichment
+
+Enable **Places API (New)** in your Google Cloud project and configure these **server-only**
+environment variables locally and on the deployment:
+
+```text
+GOOGLE_PLACES_ENABLED=true
+GOOGLE_PLACES_API_KEY=<your restricted server key>
+```
+
+Leave the flag unset/false or omit the key to keep the original itinerary display.
+Never use a `NEXT_PUBLIC_` key. Restrict the key to Places API (New) and configure
+quotas in Google Cloud; rating/count/price requests and photos can incur Google charges.
+No schema, RLS, Gemini, voting, or itinerary version changes are needed.
+
+The authenticated `/api/trips/[tripId]/places?item=<uuid>` endpoint checks existing
+trip access and the item's version/trip relationship before calling Google. It reads
+activity title, location, and destination from Supabase, not browser-supplied search
+text. Items look up place details only when their metadata area enters the viewport.
+Search uses an explicit field mask, three candidates, conservative name matching,
+and bounded timeouts. Generic/unmatched activities and API failures show no extra UI.
+Matches are labeled "Suggested place"; verify them on Google Maps.
+
+The UI requests priceLevel (not priceRange), review counts and links (not review text),
+and one small photo when available. Google Maps, provider, and photo-author attribution
+is displayed. Photo bytes are fetched on the server without exposing API-key URLs.
+Places responses use `private, no-store`; results are not persisted to the database or
+local storage. Reloading can perform a new lookup. Privacy and Terms pages describe
+the integration and link Google's policies; review these before enabling production.
+
+Run `node scripts/verify-places.mjs` for mocked access/matching/failure/key-isolation
+checks. A real key is still required to test live results, quota configuration, and
+Google photo/link availability. Reference: [Text Search](https://developers.google.com/maps/documentation/places/web-service/text-search),
+[Maps links](https://developers.google.com/maps/documentation/places/web-service/maps-links),
+[Photos](https://developers.google.com/maps/documentation/places/web-service/place-photos),
+[attribution](https://developers.google.com/maps/documentation/places/web-service/policies).
+
+## Optional landing motion
+
+The landing preview uses original local artwork: a silent ~36 KB, four-second MP4
+and ~4.4 KB WebP poster in `public/media`. No third-party footage is included.
+Desktop playback is muted, looping, inline, and pausable. Mobile/narrow screens,
+reduced-motion, data-saving, slow-network, and no-JavaScript states use the poster
+without mounting a video. Playback errors also leave the poster available.
+Set `LANDING_VIDEO_ENABLED=false` to restore the existing static destination art.
+Run `node scripts/verify-landing-video.mjs` for eligibility/fallback/asset-size checks.
+
+### Per-day map previews
+
+Each saved itinerary day includes an “On the map” block. It lazily resolves saved stops through Places API (New) and requests a Google Maps Static API preview on the server. Enable both APIs and configure:
+
+```env
+GOOGLE_PLACES_ENABLED=true
+GOOGLE_PLACES_API_KEY=your_server_places_key
+GOOGLE_MAPS_STATIC_API_KEY=your_server_maps_static_key
+```
+
+Restrict the second key to Maps Static API. Neither key is sent to the browser. Restart locally or redeploy after configuring environment variables. Both APIs require appropriate billing/quota configuration. Resolution and map failures preserve the itinerary and Google Maps search links for every stop. All resolved markers use forest green; the map automatically frames their coordinates. The map is a static preview, not an interactive route planner.
+
+Requests use the existing owner/member access check and validate the selected version belongs to the trip. Place IDs, coordinates, and categories live only in the current response/page state; no schema changes or persistent Places-content cache are introduced. Maps retain Google's full attribution (no cropping). See [Maps Static API setup](https://developers.google.com/maps/documentation/maps-static/start) and [Places policies](https://developers.google.com/maps/documentation/places/web-service/policies).

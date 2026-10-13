@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { tripDestination } from "@/lib/auth-destination";
 import { createClient } from "@/lib/supabase/server";
 import { Header } from "@/components/header";
 import { AuthButton } from "@/components/auth-buttons";
@@ -7,13 +9,15 @@ import { TripCard } from "@/components/trip-card";
 export default async function Home({
   searchParams,
 }: {
-  searchParams: Promise<{ auth_error?: string }>;
+  searchParams: Promise<{ auth_error?: string; next?: string }>;
 }) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const { auth_error } = await searchParams;
+  const { auth_error, next } = await searchParams;
+  const destination = tripDestination(next);
+  if (user) redirect(destination ?? "/trips");
   return (
     <>
       <Header signedIn={!!user} />
@@ -31,17 +35,11 @@ export default async function Home({
               Plan trips together, without the group chat chaos.
             </p>
             <p className="mt-4 max-w-md leading-7 text-slate-500">
-              Bring your people, your saved places, and your big ideas into one
-              happy plan. Your next adventure starts here.
+              Generate a day-by-day itinerary, gather your group’s feedback, and
+              revise the plan together.
             </p>
             <div className="mt-8">
-              {user ? (
-                <Link className="button-primary" href="/trips">
-                  Go to my trips <span aria-hidden="true">↗</span>
-                </Link>
-              ) : (
-                <AuthButton />
-              )}
+              <AuthButton next={destination} />
             </div>
             {auth_error && (
               <p role="alert" className="mt-4 text-sm text-red-700">
@@ -56,7 +54,7 @@ export default async function Home({
             <div className="preview-caption">
               <span className="status-dot" /> Your next “remember when…”
             </div>
-            <TripCard />
+            <TripCard video={process.env.LANDING_VIDEO_ENABLED !== "false"} />
             <div className="floating-note">
               <span className="note-icon">✓</span>
               <div>
@@ -75,25 +73,25 @@ export default async function Home({
               </h2>
             </div>
             <p className="text-sm text-slate-500">
-              A peek at what we’re building
+              From first idea to a shared itinerary
             </p>
           </div>
           <div className="grid gap-5 md:grid-cols-3">
             {[
               [
                 "01",
-                "Find your shared favorites",
-                "A tucked-away café? A sunrise hike? Give everyone’s ideas a place to land.",
+                "Create your trip",
+                "Choose your destination and dates, then add travelers who already use TripSync.",
               ],
               [
                 "02",
-                "Make a plan that clicks",
-                "Bring the who, what, and when together in an itinerary everyone can follow.",
+                "Generate your itinerary",
+                "Turn your budget and interests into a day-by-day plan with AI.",
               ],
               [
                 "03",
-                "Keep everyone in the loop",
-                "One shared home for the details, so nobody has to scroll back 200 messages.",
+                "Vote and revise together",
+                "Like, Dislike, and comment on activities. The trip owner can revise the plan with everyone’s feedback.",
               ],
             ].map(([n, title, copy]) => (
               <article key={n} className="feature-card">
@@ -107,6 +105,7 @@ export default async function Home({
       </main>
       <footer className="page-shell py-8 text-sm text-slate-500">
         TripSync. Made for making memories together.
+        <span className="ml-4 inline-flex gap-4"><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link></span>
       </footer>
     </>
   );

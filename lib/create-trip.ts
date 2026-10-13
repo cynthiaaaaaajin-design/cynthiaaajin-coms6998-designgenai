@@ -1,3 +1,8 @@
+export function tripDurationError(start: string, end: string): string {
+  const days = (Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / 86400000 + 1;
+  return days > 30 ? 'Choose a trip of 30 days or fewer, including your start and end dates, so we can generate your itinerary.' : '';
+}
+
 export function parseNewTrip(input: unknown) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Enter your trip details.');
   const data = input as Record<string, unknown>;
@@ -18,5 +23,7 @@ export function parseNewTrip(input: unknown) {
     }
   }
   if (end_date < start_date) throw new Error('End date cannot be before start date.');
+  const durationError = tripDurationError(start_date, end_date);
+  if (durationError) throw new Error(durationError);
   return { title, destination, start_date, end_date };
 }

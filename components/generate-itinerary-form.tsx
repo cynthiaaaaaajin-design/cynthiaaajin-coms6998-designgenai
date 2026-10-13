@@ -33,7 +33,7 @@ export function GenerateItineraryForm({ tripId }: { tripId: string }) {
   }
 
   return (
-    <section className="settings-card mt-8" aria-labelledby="generate-heading">
+    <section className="settings-card generation-section mt-8" aria-labelledby="generate-heading">
       <p className="eyebrow">A LITTLE INSPIRATION</p>
       <h2 id="generate-heading" className="mt-3 text-2xl font-semibold">Generate itinerary with AI</h2>
       <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500">

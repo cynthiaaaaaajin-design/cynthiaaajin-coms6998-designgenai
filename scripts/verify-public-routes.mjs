@@ -36,3 +36,16 @@ const errorPage = await get("/?auth_error=1");
 assert.equal(errorPage.status, 200);
 assert.match(await errorPage.text(), /Google sign-in didn’t finish/);
 console.log("PASS OAuth failure displays a retry message");
+const shared = await get('/trips/123');
+assert.ok([200, 307].includes(shared.status));
+// A loading boundary may stream a Next.js meta redirect after sending HTTP 200.
+const sharedHtml = await shared.text();
+const streamedLocation = sharedHtml.match(/<meta id="__next-page-redirect"[^>]*content="[^;]+;url=([^"]+)"/)?.[1];
+const loginLocation = shared.headers.get('location') ?? streamedLocation;
+assert.ok(loginLocation, 'Expected an HTTP or streamed login redirect');
+const login = new URL(loginLocation, origin);
+assert.equal(login.pathname, '/');
+assert.equal(login.searchParams.get('next'), '/trips/123');
+const retry = await get('/auth/callback?error=access_denied&next=%2Ftrips%2F123');
+assert.equal(new URL(retry.headers.get('location'), origin).searchParams.get('next'), '/trips/123');
+console.log('PASS signed-out shared-trip destination survives login redirect and OAuth cancellation');

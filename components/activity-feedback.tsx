@@ -48,45 +48,63 @@ export function ActivityFeedback({ tripId, itemId, title, initialSummary, readOn
     }
   }
 
+  const dirty = value !== (mine?.value ?? null) || comment !== (mine?.comment ?? '');
+  const comments = summary?.group.filter(vote => vote.comment?.trim()).length ?? 0;
+  function select(next: VoteValue) {
+    setValue(next);
+    setMessage('');
+    setError('');
+  }
+
   return (
-    <div className="feedback-workspace mt-5">
-      <p className="eyebrow">GROUP PULSE</p>
-      <div key={`${summary?.likes}:${summary?.dislikes}`} className="feedback-counts pulse-counts flex flex-wrap gap-4 text-sm" aria-live="polite">
-        {summary ? <><span className="font-semibold text-teal-800"><span aria-hidden="true">👍 </span>{summary.likes} Likes</span><span className="font-semibold text-slate-600"><span aria-hidden="true">👎 </span>{summary.dislikes} Dislikes</span></>
-          : <span className="text-amber-800">Feedback counts are unavailable. Refresh to try again.</span>}
-      </div>
-      {summary && <section className="mt-4" aria-label="Group feedback">
-        <h5 className="font-semibold">Traveler feedback</h5>
-        {summary.group.length ? <ul className="mt-2 divide-y divide-slate-100">
-          {summary.group.map(vote => <li key={vote.userId} className="py-3 text-sm">
-            <p className="font-semibold">{vote.name || `Traveler ${vote.userId.slice(0, 8)}`}</p>
-            <p className="mt-1">{vote.value === 1 ? '👍 Like' : '👎 Dislike'}</p>
-            {vote.comment && <p className="mt-2 whitespace-pre-wrap break-words text-slate-600">{vote.comment}</p>}
-          </li>)}
-        </ul> : <p className="mt-2 text-sm text-slate-500">No feedback yet.</p>}
-      </section>}
-      <div className="your-take">
-      <p className="eyebrow">YOUR TAKE</p>
-      <p className="mt-2 text-sm text-slate-500">Your latest feedback: {mine ? mine.value === 1 ? 'Like' : 'Dislike' : summary ? 'Not submitted yet' : 'Unavailable'}</p>
-      {mine?.comment && <p className="mt-2 whitespace-pre-wrap break-words text-sm text-slate-600">Your latest comment: {mine.comment}</p>}
-      {!readOnly && <form onSubmit={submit} className="mt-4" aria-label={`Feedback for ${title}`} aria-busy={busy}>
-        <fieldset disabled={busy}>
-          <legend className="sr-only">Choose Like or Dislike</legend>
-          <div className="flex flex-wrap gap-2">
-            <button type="button" aria-pressed={value === 1} className={value === 1 ? 'button-primary' : 'button-secondary'} onClick={() => setValue(1)}>Like</button>
-            <button type="button" aria-pressed={value === -1} className={value === -1 ? 'button-primary' : 'button-secondary'} onClick={() => setValue(-1)} aria-label="Skip (Dislike)">Skip</button>
-          </div>
-          <div className="mt-4">
-            <label htmlFor={`feedback-${itemId}`}>Comment (optional)</label>
-            <textarea id={`feedback-${itemId}`} rows={2} maxLength={2000} value={comment} onChange={event => setComment(event.target.value)} placeholder="What works for you? What would you change?" />
-          </div>
-          <button type="submit" className="button-primary mt-3" disabled={value === null}>{busy ? 'Saving feedback…' : 'Submit feedback'}</button>
-        </fieldset>
-        <div className="mt-3 text-sm" aria-live="polite">
-          {message && <p className="motion-success text-teal-800" role="status">{message}</p>}
-          {error && <p className="text-red-700" role="alert">{error}</p>}
+    <div className="feedback-workspace compact-feedback mt-4">
+      <div className="group-feedback-heading">
+        <p className="eyebrow">GROUP FEEDBACK</p>
+        <div className="feedback-counts flex flex-wrap gap-3 text-sm" aria-live="polite">
+          {summary ? <><span className="font-semibold text-teal-800">{summary.likes} {summary.likes === 1 ? 'Like' : 'Likes'}</span><span className="font-semibold text-slate-600">{summary.dislikes} {summary.dislikes === 1 ? 'Dislike' : 'Dislikes'}</span></>
+            : <span className="text-amber-800">Counts unavailable. Refresh to try again.</span>}
         </div>
-      </form>}
+      </div>
+      {summary && <>
+        <p className="mt-2 text-sm text-slate-600">{summary.group.length
+          ? `${summary.group.length} ${summary.group.length === 1 ? 'traveler has' : 'travelers have'} responded · ${comments} ${comments === 1 ? 'comment' : 'comments'}`
+          : 'No feedback yet. Be the first to share your take.'}</p>
+        {summary.group.length > 0 && <details className="feedback-details mt-2">
+          <summary>View traveler feedback</summary>
+          <ul className="mt-2 divide-y divide-slate-200" aria-label="Traveler feedback">
+            {summary.group.map(vote => <li key={vote.userId} className="py-3 text-sm">
+              <p><strong>{vote.name || `Traveler ${vote.userId.slice(0, 8)}`}</strong> · {vote.value === 1 ? 'Like' : 'Dislike'}</p>
+              {vote.comment && <p className="mt-1 whitespace-pre-wrap break-words text-slate-600">{vote.comment}</p>}
+            </li>)}
+          </ul>
+        </details>}
+      </>}
+      <div className="your-take">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="eyebrow">YOUR FEEDBACK</p>
+          <p className={`feedback-save-state text-xs ${dirty && !readOnly ? 'text-amber-800' : 'text-teal-800'}`} role="status">
+            {busy ? 'Saving…' : dirty && !readOnly ? 'Unsaved changes — submit to save' : mine ? `Saved: ${mine.value === 1 ? 'Like' : 'Dislike'}` : summary ? 'Not submitted yet' : 'Saved feedback unavailable'}
+          </p>
+        </div>
+        {readOnly ? <p className="mt-2 text-xs text-slate-500">Earlier version · Read-only</p> : <form onSubmit={submit} className="mt-3" aria-label={`Feedback for ${title}`} aria-busy={busy}>
+          <fieldset disabled={busy}>
+            <legend className="sr-only">Choose Like or Dislike, then submit to save</legend>
+            <div className="feedback-actions flex flex-wrap items-center gap-2">
+              <button type="button" aria-pressed={value === 1} className={value === 1 ? 'button-primary' : 'button-secondary'} onClick={() => select(1)}>Like</button>
+              <button type="button" aria-pressed={value === -1} className={value === -1 ? 'button-primary' : 'button-secondary'} onClick={() => select(-1)}>Dislike</button>
+              <button type="submit" className="button-secondary feedback-submit" disabled={value === null}>{busy ? 'Saving…' : 'Submit feedback'}</button>
+            </div>
+            <details className="feedback-details mt-3">
+              <summary>{comment ? 'Edit your comment' : 'Add a comment (optional)'}</summary>
+              <label htmlFor={`feedback-${itemId}`} className="mt-3 block">Comment (optional)</label>
+              <textarea id={`feedback-${itemId}`} rows={2} maxLength={2000} value={comment} onChange={event => { setComment(event.target.value); setMessage(''); }} placeholder="What works for you? What would you change?" />
+            </details>
+          </fieldset>
+          <div className="mt-2 text-sm" aria-live="polite">
+            {message && <p className="motion-success text-teal-800" role="status">{message}</p>}
+            {error && <p className="text-red-700" role="alert">{error}</p>}
+          </div>
+        </form>}
       </div>
     </div>
   );

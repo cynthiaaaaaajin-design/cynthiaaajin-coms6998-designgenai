@@ -1,9 +1,10 @@
 "use client";
+import { tripDestination } from "@/lib/auth-destination";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-export function AuthButton({ logout = false }: { logout?: boolean }) {
+export function AuthButton({ logout = false, next }: { logout?: boolean; next?: string | null }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -21,7 +22,7 @@ export function AuthButton({ logout = false }: { logout?: boolean }) {
         const { error } = await supabase.auth.signInWithOAuth({
           provider: "google",
           options: {
-            redirectTo: `${window.location.origin}/auth/callback`,
+            redirectTo: `${window.location.origin}/auth/callback${tripDestination(next) ? `?next=${encodeURIComponent(tripDestination(next)!)}` : ""}`,
             queryParams: { prompt: "select_account" },
           },
         });

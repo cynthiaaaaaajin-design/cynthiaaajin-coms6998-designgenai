@@ -1,3 +1,4 @@
+import { LandingVideo } from "./landing-video";
 import { TripCoverArt } from "@/components/trip-cover-art";
 import { normalizeDestination } from "@/lib/destinations";
 const destinations = {
@@ -28,14 +29,16 @@ const destinations = {
 };
 export function TripCard({
   destination = "coast",
+  video = false,
 }: {
   destination?: keyof typeof destinations;
+  video?: boolean;
 }) {
   const trip = destinations[destination];
   return (
     <article className="trip-card">
       <div className="destination-art illustrated-cover">
-        <TripCoverArt destination={trip.location} />
+        {video ? <LandingVideo /> : <TripCoverArt destination={trip.location} />}
         <span className="destination-label">{normalizeDestination(trip.location).canonical}</span>
         <span className="sample-label">Sample trip</span>
       </div>
