@@ -10,7 +10,7 @@ export function Header({
 }) {
   return (
     <header className="site-header">
-      <Link href="/" className="brand">
+      <Link href="/?welcome=1" className="brand" aria-label="TripSync home">
         <span className="brand-icon" aria-hidden="true">
           ↗
         </span>

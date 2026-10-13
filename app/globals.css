@@ -1062,3 +1062,90 @@ body { font-family: var(--font-interface); }
   .activity-support-layout .place-summary > div > .font-semibold { font-size: 17px; }
   .activity-support-layout .place-summary > div > .text-xs { font-size: 13px; }
 }
+
+/* Landing: one cinematic ocean canvas, one clear sign-in action. */
+.mode-landing.ocean-landing { max-width: none; width: 100%; padding: 0; border-radius: 0; background: #F8F9F6; }
+.ocean-landing .ocean-hero { position: relative; isolation: isolate; overflow: hidden; display: flex; align-items: center; min-height: min(760px, 85svh); padding: clamp(56px, 8vw, 100px) max(24px, calc((100vw - 1120px) / 2)); margin: 0; }
+.ocean-hero > .landing-video { z-index: -1; }
+/* Only a directional contrast layer; no white edge fades or blur. */
+.ocean-hero .landing-video-overlay {
+  background:
+    linear-gradient(90deg, #102f3bba 0%, #102f3b70 55%, #102f3b20 100%);
+}
+.ocean-hero .hero-copy { max-width: 680px; color: #fff; }
+.ocean-hero .route-motif { display: none; }
+.ocean-hero .pill { background: transparent; padding: 0; color: #e2eeeb; border: 0; font-size: 12px; letter-spacing: .1em; font-weight: 500; }
+.ocean-landing .hero h1 { font-size: clamp(52px, 6.3vw, 88px); line-height: 1.02; letter-spacing: -.04em; color: #fff; }
+.ocean-hero h1 span { color: #dae9df; }
+.ocean-hero .text-slate-600, .ocean-hero .text-slate-500 { color: #e1e9e8; }
+.ocean-hero .text-red-700 { color: #fff; background: #712e29; padding: 8px 12px; border-radius: 6px; }
+.ocean-hero .button-primary { background: #F8F9F6; color: #173D38; border: 1px solid #ffffff80; border-radius: 7px; padding: 14px 22px; box-shadow: none; font-weight: 600; }
+.ocean-hero .button-primary:hover { background: #E4EFEB; transform: translateY(-1px); }
+.ocean-hero .google-mark { background: transparent; }
+.ocean-explore { position: absolute; bottom: 24px; left: max(24px, calc((100vw - 1120px) / 2)); font-size: 12px; color: #fff; letter-spacing: .04em; border-bottom: 1px solid #ffffff70; padding-bottom: 5px; }
+.ocean-hero .video-toggle { right: 24px; bottom: 24px; border: 1px solid #ffffff70; border-radius: 6px; background: #173d3870; color: white; }
+.ocean-landing .features-section { max-width: 1120px; margin-inline: auto; padding: 56px 24px; }
+.ocean-hero button:focus-visible, .ocean-explore:focus-visible { outline: 3px solid #fff; outline-offset: 5px; }
+@media (max-width: 600px) { .ocean-landing .ocean-hero { min-height: 680px; padding: 60px 24px 90px; }.ocean-hero .hero-copy > .text-xl { font-size: 18px; }.ocean-hero .hero-copy > .leading-7 { font-size: 14px; } }
+
+/* A quiet photographic backdrop for the travel collection. */
+.ocean-dashboard-page { position: relative; isolation: isolate; }
+.mode-dashboard.ocean-dashboard { background: transparent; }
+.ocean-dashboard-page::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(248,249,246,.52), rgba(248,249,246,.62) 650px, #F8F9F6 1400px), url('/media/waves-background.webp') center top / auto 1400px no-repeat;
+}
+.ocean-dashboard .journal-section { box-shadow: 0 8px 32px #173d3808; }
+.ocean-dashboard .journal-owned { background: #e4efebb8; }
+.ocean-dashboard .journal-shared { background: #edf3f5c2; }
+@media (max-width: 600px) {
+  .ocean-dashboard-page::before { background-size: auto, auto 1000px; }
+}
+.ocean-hero .video-toggle { top: auto; height: auto; z-index: 2; }
+
+.ocean-dashboard .dashboard-quick-start { background: #e4efebc7; }
+.ocean-dashboard > .eyebrow, .ocean-dashboard > .text-slate-500 { color: #284c47; }
+
+/* Keep the small footer controls clear above the softened lower edge. */
+.ocean-hero .ocean-explore { bottom: 56px; }
+.ocean-hero .video-toggle { bottom: 52px; background: #173d38cc; }
+@media (max-width: 600px) {
+  .ocean-hero .ocean-explore { bottom: 44px; }
+}
+
+/* A continuous coastline behind the dashboard navigation and content. */
+.ocean-dashboard-page > .site-header {
+  width: 100%;
+  padding-inline: max(32px, calc((100vw - 1280px) / 2));
+  border-bottom: 0;
+  background: linear-gradient(180deg, #f8f9f6b8 0%, #f8f9f680 60%, #f8f9f600 100%);
+}
+@media (max-width: 640px) {
+  .ocean-dashboard-page > .site-header { padding-inline: 18px; }
+}
+
+/* The entrance navigation shares the video canvas instead of a white band. */
+.ocean-entry-page { position: relative; }
+.ocean-entry-page > .site-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 3;
+  width: 100%;
+  padding-inline: max(32px, calc((100vw - 1280px) / 2));
+  background: transparent;
+  border: 0;
+  color: #fff;
+  text-shadow: 0 1px 5px #102f3b99;
+}
+.ocean-entry-page > .site-header .brand > .text-teal-600 { color: #dae9df; }
+.ocean-entry-page > .site-header .button-secondary { background: #173d3866; color: #fff; border-color: #ffffff66; }
+.ocean-entry-page .ocean-hero { min-height: min(860px, 100svh); padding-top: 148px; padding-bottom: 110px; }
+@media (max-width: 640px) {
+  .ocean-entry-page > .site-header { padding-inline: 18px; }
+  .ocean-entry-page .ocean-hero { min-height: 760px; padding-top: 166px; }
+}

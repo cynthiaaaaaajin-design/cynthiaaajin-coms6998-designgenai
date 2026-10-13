@@ -14,15 +14,17 @@ function canAnimate() {
   const connection = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
   return window.matchMedia(mediaQuery).matches && !connection?.saveData && !['slow-2g', '2g', '3g'].includes(connection?.effectiveType ?? '');
 }
-export function LandingVideo({ enabled = true }: { enabled?: boolean }) {
+export function LandingVideo({ enabled = true, ocean = false }: { enabled?: boolean; ocean?: boolean }) {
+  const poster = ocean ? '/media/waves-background.webp' : '/media/travel-poster.webp';
+  const source = ocean ? '/media/coastal-journey.mp4' : '/media/travel-loop.mp4';
   const eligible = useSyncExternalStore(subscribe, canAnimate, () => false);
   const video = useRef<HTMLVideoElement>(null);
   const [failed, setFailed] = useState(false);
   const [playing, setPlaying] = useState(false);
   const animated = enabled && eligible && !failed;
   return <div className="landing-video">
-    <img src="/media/travel-poster.webp" alt="Illustrated coastal village with a sailboat" width={640} height={400} fetchPriority="high" />
-    {animated && <video ref={video} src="/media/travel-loop.mp4" muted autoPlay loop playsInline preload="none" poster="/media/travel-poster.webp" aria-hidden="true"
+    <img src={poster} alt={ocean ? "Ocean waves rolling onto the coast" : "Illustrated coastal village with a sailboat"} width={640} height={400} fetchPriority="high" />
+    {animated && <video ref={video} src={source} muted autoPlay loop playsInline preload="none" poster={poster} aria-hidden="true"
       onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onError={() => setFailed(true)} />}
     <span className="landing-video-overlay" aria-hidden="true" />
     {animated && <button type="button" className="video-toggle" onClick={() => {

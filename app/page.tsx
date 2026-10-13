@@ -4,25 +4,26 @@ import { tripDestination } from "@/lib/auth-destination";
 import { createClient } from "@/lib/supabase/server";
 import { Header } from "@/components/header";
 import { AuthButton } from "@/components/auth-buttons";
-import { TripCard } from "@/components/trip-card";
+import { LandingVideo } from "@/components/landing-video";
 
 export default async function Home({
   searchParams,
 }: {
-  searchParams: Promise<{ auth_error?: string; next?: string }>;
+  searchParams: Promise<{ auth_error?: string; next?: string; welcome?: string }>;
 }) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const { auth_error, next } = await searchParams;
+  const { auth_error, next, welcome } = await searchParams;
   const destination = tripDestination(next);
-  if (user) redirect(destination ?? "/trips");
+  if (user && (destination || welcome !== "1")) redirect(destination ?? "/trips");
   return (
-    <>
+    <div className="ocean-entry-page">
       <Header signedIn={!!user} />
-      <main className="page-shell mode-landing">
-        <section className="hero">
+      <main className="page-shell mode-landing ocean-landing">
+        <section className="hero ocean-hero">
+          <LandingVideo ocean enabled={process.env.LANDING_VIDEO_ENABLED !== "false"} />
           <div className="hero-copy">
             <div className="route-motif" aria-hidden="true" />
             <p className="pill">A little less planning. A lot more going.</p>
@@ -39,7 +40,7 @@ export default async function Home({
               revise the plan together.
             </p>
             <div className="mt-8">
-              <AuthButton next={destination} />
+              {user ? <Link className="button-primary" href="/trips">Continue to my trips <span aria-hidden="true">↗</span></Link> : <AuthButton next={destination} />}
             </div>
             {auth_error && (
               <p role="alert" className="mt-4 text-sm text-red-700">
@@ -50,19 +51,7 @@ export default async function Home({
               For the weekend escapes and the once-in-a-lifetimes.
             </p>
           </div>
-          <div className="hero-preview">
-            <div className="preview-caption">
-              <span className="status-dot" /> Your next “remember when…”
-            </div>
-            <TripCard video={process.env.LANDING_VIDEO_ENABLED !== "false"} />
-            <div className="floating-note">
-              <span className="note-icon">✓</span>
-              <div>
-                <strong>Less back-and-forth</strong>
-                <p>More “see you at the airport.”</p>
-              </div>
-            </div>
-          </div>
+          <a href="#how-it-works" className="ocean-explore">Discover TripSync <span aria-hidden="true">↓</span></a>
         </section>
         <section id="how-it-works" className="features-section">
           <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
@@ -107,6 +96,6 @@ export default async function Home({
         TripSync. Made for making memories together.
         <span className="ml-4 inline-flex gap-4"><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link></span>
       </footer>
-    </>
+    </div>
   );
 }

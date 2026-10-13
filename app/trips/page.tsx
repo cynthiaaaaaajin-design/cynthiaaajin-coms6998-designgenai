@@ -35,9 +35,9 @@ export default async function Trips() {
   const incomplete =
     !profile?.first_name?.trim() || !profile?.last_name?.trim();
   return (
-    <>
+    <div className="ocean-dashboard-page">
       <Header signedIn active="trips" />
-      <main className="page-shell mode-dashboard py-12">
+      <main className="page-shell mode-dashboard ocean-dashboard py-12">
         <p className="eyebrow">YOUR NEXT CHAPTER</p>
         <h1 className="page-title">
           Oh, the places you’ll go
@@ -82,6 +82,6 @@ export default async function Trips() {
           </section>
         </>}
       </main>
-    </>
+    </div>
   );
 }
