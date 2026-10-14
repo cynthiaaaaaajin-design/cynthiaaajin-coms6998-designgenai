@@ -1,18 +1,17 @@
 'use client';
 
-import { useRef, useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import type { CurrentVote, FeedbackSummary, VoteValue } from '@/lib/feedback';
 
-export function ActivityFeedback({ tripId, itemId, title, initialSummary, readOnly = false }: {
-  tripId: string; itemId: string; title: string; initialSummary: FeedbackSummary | null; readOnly?: boolean;
+export function ActivityFeedback({ tripId, itemId, title, initialSummary, readOnly = false, children }: {
+  tripId: string; itemId: string; title: string; initialSummary: FeedbackSummary | null; readOnly?: boolean; children?: ReactNode;
 }) {
   const router = useRouter();
   const submitting = useRef(false);
   const [summary, setSummary] = useState(initialSummary);
   const [mine, setMine] = useState<CurrentVote | null>(initialSummary?.mine ?? null);
   const [value, setValue] = useState<VoteValue | null>(initialSummary?.mine?.value ?? null);
-  const [comment, setComment] = useState(initialSummary?.mine?.comment ?? '');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -28,7 +27,8 @@ export function ActivityFeedback({ tripId, itemId, title, initialSummary, readOn
     try {
       const response = await fetch(`/api/trips/${encodeURIComponent(tripId)}/votes`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ item_id: itemId, value, comment }),
+        // Retain legacy comments when changing a vote; new text belongs to suggestions.
+        body: JSON.stringify({ item_id: itemId, value, comment: mine?.comment ?? null }),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Feedback could not be saved. Please try again.');
@@ -37,7 +37,6 @@ export function ActivityFeedback({ tripId, itemId, title, initialSummary, readOn
       const current: CurrentVote = result.summary?.mine ?? result.saved;
       setMine(current);
       setValue(current.value);
-      setComment(current.comment ?? '');
       setMessage(result.warning || '✓ Saved');
       router.refresh();
     } catch (err) {
@@ -48,7 +47,7 @@ export function ActivityFeedback({ tripId, itemId, title, initialSummary, readOn
     }
   }
 
-  const dirty = value !== (mine?.value ?? null) || comment !== (mine?.comment ?? '');
+  const dirty = value !== (mine?.value ?? null);
   const comments = summary?.group.filter(vote => vote.comment?.trim()).length ?? 0;
   function select(next: VoteValue) {
     setValue(next);
@@ -94,17 +93,13 @@ export function ActivityFeedback({ tripId, itemId, title, initialSummary, readOn
               <button type="button" aria-pressed={value === -1} className={value === -1 ? 'button-primary' : 'button-secondary'} onClick={() => select(-1)}>Dislike</button>
               <button type="submit" className="button-secondary feedback-submit" disabled={value === null}>{busy ? 'Saving…' : 'Submit feedback'}</button>
             </div>
-            <details className="feedback-details mt-3">
-              <summary>{comment ? 'Edit your comment' : 'Add a comment (optional)'}</summary>
-              <label htmlFor={`feedback-${itemId}`} className="mt-3 block">Comment (optional)</label>
-              <textarea id={`feedback-${itemId}`} rows={2} maxLength={2000} value={comment} onChange={event => { setComment(event.target.value); setMessage(''); }} placeholder="What works for you? What would you change?" />
-            </details>
           </fieldset>
           <div className="mt-2 text-sm" aria-live="polite">
             {message && <p className="motion-success text-teal-800" role="status">{message}</p>}
             {error && <p className="text-red-700" role="alert">{error}</p>}
           </div>
         </form>}
+        {children}
       </div>
     </div>
   );

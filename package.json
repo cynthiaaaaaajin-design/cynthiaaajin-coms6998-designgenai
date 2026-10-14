@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:collaboration": "node scripts/verify-collaboration.mjs && node scripts/verify-collaboration-db.mjs && node scripts/verify-itinerary.mjs",
+    "test:phase3": "node scripts/verify-phase3.mjs && node scripts/verify-phase3-db.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.27.0",
@@ -19,6 +21,7 @@
     "server-only": "^0.0.1"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.10",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

@@ -1,3 +1,5 @@
+import { preferenceSnapshot, type PreferenceSnapshot } from '@/lib/itinerary-editing-server';
+import { groupPreferencePrompt } from '@/lib/collaboration';
 import { createClient } from '@/lib/supabase/server';
 import { buildPrompt, parsePreferences, tripDayCount, validTripId } from '@/lib/itinerary';
 import { generateItinerary } from '@/lib/gemini';
@@ -46,11 +48,20 @@ export async function POST(request: Request, { params }: { params: Promise<{ tri
     return json({ error: error instanceof Error ? error.message : 'Invalid trip preferences.' }, 400);
   }
 
+  let snapshot: PreferenceSnapshot;
+  try {
+    snapshot = await preferenceSnapshot(supabase, tripId);
+    prompt += groupPreferencePrompt(snapshot.preferences, snapshot.participants.length);
+  } catch {
+    return json({ error: 'Group preferences could not be loaded. Refresh or check the Phase 3 migration before generating.' }, 500);
+  }
+
   const { data: version, error: versionError } = await supabase.from('itinerary_versions').insert({
     trip_id: tripId,
     version_number: 1,
     created_by: user.id,
     source: 'ai_initial',
+    preference_snapshot: snapshot,
     prompt_text: prompt,
     response_text: null,
     // created_at uses the database default; parent_version_id remains null.

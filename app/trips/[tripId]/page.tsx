@@ -1,3 +1,8 @@
+import { TravelPreferences } from '@/components/travel-preferences';
+import { ActivitySuggestion } from '@/components/activity-suggestion';
+import { SuggestionsCenter } from '@/components/suggestions-center';
+import { loadPreferences, loadChangeRequests } from '@/lib/collaboration-server';
+import type { ChangeRequest, Person, PreferenceRow } from '@/lib/collaboration';
 import { TripOverview } from "@/components/trip-overview";
 import { ItineraryNavigation } from "@/components/itinerary-navigation";
 import { GroupConsensus } from '@/components/group-consensus';
@@ -17,7 +22,9 @@ import { notFound, redirect } from 'next/navigation';
 import { Header } from '@/components/header';
 import { GenerateItineraryForm } from '@/components/generate-itinerary-form';
 import { ActivityFeedback } from '@/components/activity-feedback';
-import { ReviseItineraryButton } from '@/components/revise-itinerary-button';
+import { ItineraryWorkspace } from '@/components/itinerary-workspace';
+import { loadProposals, preferencesChanged } from '@/lib/itinerary-editing-server';
+import type { Proposal } from '@/lib/itinerary-editing';
 import { ItineraryVersionSelector } from '@/components/itinerary-version-selector';
 import { ManageTravelers } from '@/components/manage-travelers';
 import { loadTravelers } from '@/lib/travelers-server';
@@ -71,9 +78,11 @@ export default async function TripDetail({ params, searchParams }: {
     versions.push(...data);
     cursor = data[data.length - 1].version_number;
   }
-  const version = selectedId ? versions.find(entry => entry.id === selectedId) : versions[0];
+  const publishedState = versions.length ? await supabase.rpc('current_published_itinerary', { p_trip_id: tripId }) : { data: null, error: null };
+  const publishedId = publishedState.data?.id ?? (publishedState.error ? versions[0]?.id : null);
+  const version = selectedId ? versions.find(entry => entry.id === selectedId) : versions.find(entry => entry.id === publishedId) ?? versions[0];
   if (selectedId && !version && !versionError) notFound();
-  const isCurrent = !!version && version.id === versions[0]?.id;
+  const isCurrent = !!version && version.id === publishedId;
   let items: (ItineraryActivity & { id: string })[] = [];
   let itemsError = false;
   if (version) {
@@ -100,12 +109,37 @@ export default async function TripDetail({ params, searchParams }: {
     try { feedback = await loadFeedback(supabase, items.map(item => item.id), user.id, tripId); }
     catch { feedbackError = true; }
   }
+  let preferences: PreferenceRow[] = [];
+  let preferencePeople: Person[] = [];
+  let preferencesError = false;
+  try {
+    const group = await loadPreferences(supabase, tripId);
+    preferences = group.preferences; preferencePeople = group.people;
+  } catch { preferencesError = true; }
+  let requests: ChangeRequest[] = [];
+  let requestsError = false;
+  if (version) {
+    try {
+      requests = await loadChangeRequests(supabase, tripId, version.id);
+      if (!isOwner) requests = requests.filter(row => row.created_by === user.id);
+    } catch { requestsError = true; }
+  }
   let generationIssue = '';
   try {
     tripDayCount(trip.start_date, trip.end_date);
     if (!trip.destination?.trim()) generationIssue = 'Add a destination to this trip before generating.';
   } catch (error) {
     generationIssue = error instanceof Error ? error.message : 'Check this trip’s dates.';
+  }
+  let proposals: Proposal[] = [];
+  let preferenceChanges: boolean | null = null;
+  let editingError = !!publishedState.error;
+  if (version && items.length && !generationIssue) {
+    try {
+      [proposals, preferenceChanges] = await Promise.all([
+        loadProposals(supabase, tripId, version.id), preferencesChanged(supabase, tripId),
+      ]);
+    } catch { editingError = true; }
   }
   const days = [...new Set(items.map(item => item.day_number))];
   const people = await loadTripPeople(supabase, tripId).catch(() => null);
@@ -139,6 +173,9 @@ export default async function TripDetail({ params, searchParams }: {
         </div>
         {isOwner && <TripActions tripId={tripId} />}
         {isOwner && !placesEnabled() && <p className="notice mt-4">Google place details and map previews are not enabled for this deployment. Configure the server Places API key to enable them; your itinerary and place search links remain available.</p>}
+        <TravelPreferences tripId={tripId} userId={user.id} people={preferencePeople} preferences={preferences} error={preferencesError}>
+          {isOwner && !versionError && !version && !generationIssue && <GenerateItineraryForm tripId={tripId} submitted={preferences.length} total={preferencePeople.length} preferencesError={preferencesError} />}
+        </TravelPreferences>
         {versionError ? (
           <div className="notice mt-8" role="alert">Your saved itinerary could not be loaded. Refresh to try again. Generation is unavailable until we can check existing versions.</div>
         ) : version ? (
@@ -162,10 +199,9 @@ export default async function TripDetail({ params, searchParams }: {
             </div>}
             <PlanningHistory tripId={tripId} versions={versions} selectedId={version.id} reviews={planningReviews} />
             <ItineraryVersionSelector tripId={tripId} versions={versions} selectedId={version.id} />
-            <p className="mt-3 text-sm text-slate-500">{isCurrent ? 'Your latest saved plan.' : 'An earlier saved plan. Feedback is read-only for this version.'} Check opening hours and availability before you go.</p>
+            <p className="mt-3 text-sm text-slate-500">{isCurrent ? 'Your latest saved plan.' : 'An earlier saved plan. Votes are read-only for this version.'} Check opening hours and availability before you go.</p>
             {!isCurrent && <Link href={`/trips/${tripId}`} className="button-secondary mt-4">Back to current itinerary</Link>}
-            {isCurrent && isOwner && !itemsError && items.length > 0 && !feedbackError && !generationIssue &&
-              <ReviseItineraryButton key={version.id} tripId={tripId} />}
+            <SuggestionsCenter key={`suggestions:${version.id}`} tripId={tripId} requests={requests} people={preferencePeople} items={items} isOwner={isOwner} isCurrent={isCurrent} versionNumber={version.version_number} error={requestsError} />
             {itemsError ? (
               <p className="notice mt-6" role="alert">Your activities could not be loaded. Please refresh to try again.</p>
             ) : items.length === 0 ? (
@@ -173,7 +209,8 @@ export default async function TripDetail({ params, searchParams }: {
                 <p>Something went wrong while saving this itinerary.</p>
                 {isOwner && ['ai_initial', 'ai_revision'].includes(version.source) && <RepairItineraryButton key={version.id} tripId={tripId} versionId={version.id} />}
               </div>
-            ) : days.map(day => (
+            ) : <ItineraryWorkspace tripId={tripId} versionId={version.id} items={items} days={generationIssue ? 0 : tripDayCount(trip.start_date, trip.end_date)} isOwner={isOwner} isCurrent={isCurrent} proposals={proposals} people={preferencePeople} changed={preferenceChanges} loadError={editingError || !!generationIssue}>
+              {days.map(day => (
               <section key={`${version.id}:${day}`} className="itinerary-version itinerary-day mt-8" aria-labelledby={`day-${day}`}>
                 <h3 id={`day-${day}`} tabIndex={-1} className="day-label mb-4 text-lg font-semibold">DAY {String(day).padStart(2, '0')}</h3>
                 <ol className="itinerary-timeline">
@@ -193,7 +230,9 @@ export default async function TripDetail({ params, searchParams }: {
                           title={item.title}
                           readOnly={!isCurrent}
                           initialSummary={feedbackError ? null : feedback[item.id] ?? emptyFeedback()}
-                        />
+                        >
+                          {isCurrent && <ActivitySuggestion tripId={tripId} itemId={item.id} versionId={version.id} title={item.title} />}
+                        </ActivityFeedback>
                         </div>
                       </div>
                     </li>
@@ -202,6 +241,7 @@ export default async function TripDetail({ params, searchParams }: {
                 <DayMap tripId={tripId} versionId={version.id} day={day} destination={trip.destination ?? ""} items={items.filter(item => item.day_number === day)} />
               </section>
             ))}
+            </ItineraryWorkspace>}
           </section>
         ) : !isOwner ? (
           <p className="notice mt-8">Your trip owner hasn’t generated an itinerary yet. Once it’s ready, you can share feedback on each activity.</p>
@@ -210,7 +250,7 @@ export default async function TripDetail({ params, searchParams }: {
             <h2 className="text-2xl font-semibold">Generate itinerary with AI</h2>
             <p className="notice mt-4" role="alert">{generationIssue}</p>
           </section>
-        ) : <GenerateItineraryForm tripId={tripId} />}
+        ) : null}
         {isOwner && <ManageTravelers
           key={`${tripId}:${travelersError}:${JSON.stringify(travelers)}`}
           tripId={tripId} ownerId={user.id} initialTravelers={travelers} loadError={travelersError}

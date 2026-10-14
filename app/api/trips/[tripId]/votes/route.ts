@@ -37,7 +37,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tri
     return json({ error: 'Trip access could not be verified. Please try again.' }, 500);
   }
   const { data: version, error: versionError } = await supabase.from('itinerary_versions')
-    .select('id').eq('trip_id', tripId).order('version_number', { ascending: false }).limit(1).maybeSingle();
+    .select('id,itinerary_items!inner(id)').eq('trip_id', tripId).order('version_number', { ascending: false }).limit(1).maybeSingle();
   if (versionError) return json({ error: 'The current itinerary could not be checked.' }, 500);
   if (!version) return json({ error: 'There is no current itinerary to rate.' }, 409);
   const { data: item, error: itemError } = await supabase.from('itinerary_items').select('id')

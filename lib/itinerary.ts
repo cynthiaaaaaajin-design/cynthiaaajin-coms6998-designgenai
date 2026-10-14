@@ -42,9 +42,6 @@ export function parsePreferences(value: unknown): GenerationPreferences {
     }
     result[key] = field.trim();
   }
-  if (!result.budget || !result.interests) {
-    throw new Error('Enter a budget and your interests/preferences.');
-  }
   return result;
 }
 

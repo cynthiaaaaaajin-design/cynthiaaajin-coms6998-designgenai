@@ -645,3 +645,272 @@ Day maps use Google Static Maps at explicit center/zoom with matching Mercator-p
 Trip-detail photo carousel supports horizontal mobile swipes without blocking vertical page scrolling. The new Forest/Sage/Mist/Ivory/Coral palette preserves the two-font system and existing destination hero themes.
 
 Verification: production build, TypeScript, lint and all verification scripts passed (public-route checks run against production build, because Next development redirects use different cache headers). Added consensus tests for duplicate/replaced votes, removed members, denominator/empty states, and map projection/category tests. Live owner browser checks: destination card photos, traveler counts, history data, second carousel photo, restaurant marker details and 390px overflow. Physical-device swipe, member account end-to-end interaction, and live hotel marker examples remain manual checks. No live votes, sharing changes, generation or database mutations were performed for this UI iteration.
+
+## TripSync collaboration — Phase 1 + Phase 2
+
+This upgrade preserves the existing visual design, hero/carousel, timeline, maps,
+Places, invitations, and append-only Like/Dislike/comment behavior. It adds compact
+Travel preferences and Suggestions to review cards using the existing styles.
+
+**Database installation:** Run **`sql/trip-collaboration.sql` once**, as postgres in
+Supabase SQL Editor, after verifying that you have selected the same project as
+`NEXT_PUBLIC_SUPABASE_URL`. This is the single complete migration for both phases;
+it does not require installing an additional display helper. It assumes the
+existing `trips.id` is bigint, `profiles.id`, `itinerary_versions.id`, and
+`itinerary_items.id` are UUIDs, and the existing private-trip schema matches the
+app. The transaction rolls back on a schema mismatch. It adds two tables, scoped
+helper functions, grants, RLS, triggers, composite foreign keys, and indexes. It
+does not change existing table RLS policies or rewrite votes or versions. Apply
+before deploying these application changes. A missing migration shows an explicit
+unavailable message and prevents AI generation from silently ignoring preferences.
+
+- Every current participant, including the owner, can save and update their own
+  preferences. Budget is optional, with an explicit three-letter currency and
+  per-person daily or trip-total scope. Lists allow 30 entries of 300 characters;
+  notes allow 2,000 characters. Current participants can view group preferences.
+  Removed members lose access and their preferences are excluded from the group.
+- Initial generation loads current participants and all available saved preferences
+  server-side. Missing submissions never block generation: the owner sees progress
+  and a **Generate anyway** action. Owner trip-level budget/interests are now
+  optional additional guidance (superseding the earlier required-fields description).
+  No preferences still produces the existing itinerary schema. Member text remains
+  untrusted data; hard-constraint conflicts must be explained in activity descriptions,
+  and incompatible budget currencies/scopes must never be silently combined.
+  Existing prompt/response persistence, validation, owner-only access, repair and
+  version semantics remain intact.
+- **Suggest a change** expands independently of Like/Dislike, with seven categories,
+  optional explanation and replacement (required for Suggest replacement). It never
+  inserts a vote. Suggestions are immutable after submission; editing is intentionally
+  unsupported. The database checks current membership, author identity, the latest
+  version, and matching trip/version/item references.
+- Owners see all suggestions for the selected version, grouped by day, with accurate
+  pending/resolved/declined totals and owner-only resolution/decline actions. Members
+  see their own submissions and statuses. Reviewed entries remain available in a
+  compact disclosure. Selecting an earlier version shows its historical requests;
+  a new version never copies, deletes, or silently resolves earlier requests.
+  Owners may explicitly review pending historical suggestions. Existing full
+  itinerary revision is unchanged; partial AI revision is not implemented.
+
+Endpoints (session-authenticated, private/no-store):
+`GET/PUT /api/trips/:tripId/preferences`,
+`GET /api/trips/:tripId/suggestions?version=:uuid`,
+`POST/PATCH /api/trips/:tripId/suggestions`.
+Identity fields are supplied by the server, and database grants/RLS independently
+restrict writes even when the API is bypassed.
+
+Validation:
+
+```sh
+npm run test:collaboration
+for script in scripts/verify-*.mjs; do node "$script" || exit 1; done
+npx tsc --noEmit
+npm run lint
+npm run build
+# If the environment blocks Turbopack's local CSS worker port:
+npm run build -- --webpack
+```
+
+`verify-collaboration.mjs` tests API behavior and paginated loading with a stateful
+mock. `verify-collaboration-db.mjs` executes the complete migration in isolated
+WASM PostgreSQL (PGlite) with representative private-trip tables, then tests real
+RLS/grants, persistence/upsert, unauthorized and removed-member denial, association
+constraints, owner resolution/decline, and historical vote/version preservation.
+`verify-itinerary.mjs` covers submitted, missing, empty, and unavailable preferences
+and existing generation failure/persistence behavior. These tests do **not** prove
+that the connected Supabase project's schema, policies, or deployment work.
+
+**Live verification still required:** No migration has been applied to Supabase by
+this implementation. After installing the SQL, use a disposable trip with owner,
+member and unrelated accounts: save/update preferences and reload; generate with
+some and no submissions; submit a suggestion without casting another vote; resolve
+and decline as owner; select an earlier version after revision; remove a member and
+confirm their direct API/database access is denied. Verify logged-out access is
+also denied. Check the rendered cards on desktop/mobile and confirm the carousel,
+Maps/Places, OAuth and invitations still work in the deployed environment.
+
+Files changed for this upgrade:
+
+| Area | Files |
+| --- | --- |
+| Migration | `sql/trip-collaboration.sql` |
+| API | `app/api/trips/[tripId]/preferences/route.ts`, `app/api/trips/[tripId]/suggestions/route.ts`, `app/api/trips/[tripId]/generate/route.ts` |
+| UI | `app/trips/[tripId]/page.tsx`, `components/travel-preferences.tsx`, `components/activity-suggestion.tsx`, `components/suggestions-center.tsx`, `components/activity-feedback.tsx`, `components/generate-itinerary-form.tsx`, `app/globals.css` (new select controls only) |
+| Logic | `lib/collaboration.ts`, `lib/collaboration-server.ts`, `lib/collaboration-route.ts`, `lib/itinerary.ts`, `lib/gemini.ts` |
+| Verification | `scripts/verify-collaboration.mjs`, `scripts/verify-collaboration-db.mjs`, `scripts/verify-itinerary.mjs`, `scripts/verify-presentation.mjs` |
+| Setup/docs | `package.json`, `package-lock.json`, `README.md` |
+
+Start a local app server in another terminal before running
+`verify-public-routes.mjs` (default `http://localhost:3000`, or pass another origin).
+All other verification scripts run without a server. Supabase and Gemini calls in
+those scripts are mocked; the database suite uses only in-memory PostgreSQL.
+
+The preference editor and initial generation action now share the existing pale-blue
+planning card. Personal interests and constraints are entered only in preferences;
+optional group budget/logistics are collapsed under Extra trip instructions. Only
+the owner sees generation controls, and these are hidden while editing preferences
+to avoid generating from unsaved edits. No additional database migration is needed
+for this layout change.
+
+Activity feedback now keeps Like/Dislike and routes new written feedback through
+Suggest a change. The standalone vote-comment editor has been removed; existing
+comments remain visible and are retained when a traveler changes their vote. The
+replacement text field appears only for Suggest replacement. This UI simplification
+requires no additional Supabase migration.
+
+## Phase 3 — collaborative drafts and AI proposals
+
+The received Phase 3 specification ends mid-sentence in section 12 ("Compare the
+current normalized"). The implementation covers all complete requirements received,
+including snapshot comparison and an owner-reviewed full regeneration flow. No
+additional requirements beyond that truncated text have been assumed.
+
+**Installation:** After the Phase 1/2 migration is installed, run
+**`sql/trip-phase3.sql` once** as postgres in the intended Supabase project's SQL
+Editor, before deploying this code. Do not rerun `trip-collaboration.sql`. The new
+transaction adds `itinerary_versions.preference_snapshot`, `itinerary_proposals`,
+its private-trip RLS policy and checked RPCs. It does not backfill, rewrite, or
+remove historical itineraries, feedback, or votes. Existing versions/items keep
+existing RLS; no new direct version/item write privileges are granted to members.
+All new publication goes through transaction-scoped, participant/owner-checked
+functions with fixed search paths and restricted execution grants.
+
+Actual remote schema/admin access is unavailable in this environment. A read-only
+attempt to fetch the configured project's public API schema was denied. Migration
+verification therefore uses a representative PostgreSQL schema reconstructed from
+the application's routes, queries and existing migrations; this is not verification
+of the live project's column types, triggers or policies. In particular the migration
+expects existing UUID version/item IDs, bigint trip IDs, date trip dates, and the
+existing `parent_version_id`, `source`, `origin`, prompt/response and ordering columns.
+It supports existing source/origin column types through `%type`. Schema errors roll
+back the migration; report the error rather than deleting existing tables.
+
+Manual editing:
+
+- Current owners and members can **Edit itinerary**, add/remove/change activities,
+  change day/time/title/location/description, and move activities up/down within a day.
+  The existing timeline/card classes are reused. Maps, photos and ordinary feedback
+  return with the unchanged viewing timeline when editing is closed.
+- Drafts are held locally until **Save changes** opens the Added/Removed/Updated/Moved
+  summary. **Save new version** publishes; **Continue editing** and **Discard changes**
+  remain available. Browser reload/navigation discards an unsaved local draft.
+- A draft records its starting version. `save_manual_itinerary` locks the trip,
+  checks current participation and the latest version, validates fields, source IDs,
+  dates and contiguous ordering, and creates version+items in one transaction.
+  Removed members are denied. Stale saves return HTTP 409 with the specified message
+  and a link to review the latest itinerary; no automatic merge occurs.
+- New/changed content uses manual origin; unchanged copied content retains its origin.
+  All new rows get fresh item IDs. Previous items, votes, and requests remain untouched.
+  Empty days are allowed for manual plans; entirely empty plans are rejected.
+
+AI assistance:
+
+- **Ask AI to revise a day or activity** allows participants to select exactly one
+  activity or day and provide instructions. Current preferences, hard constraints,
+  current-member latest votes and relevant pending structured suggestions enter the
+  prompt as untrusted data. No Places data is persisted or invented as verified data.
+- Gemini returns a schema-validated replacement, explanation and uncertainties. A
+  proposal is stored separately from itinerary versions and visible to all current
+  participants, so an owner can review a member's proposal later.
+- The **AI proposals** disclosure shows Before/After, the explanation, uncertainties,
+  and an explicit list of unchanged activities. Only the owner sees **Apply changes**.
+  Applying rechecks ownership, latest base version, current preferences and trip
+  details; the database assembles the replacement from the immutable saved response.
+  It never trusts a client-supplied merged itinerary. The exact prompt/response and
+  preference snapshot are saved on the new `ai_revision` version.
+- One-activity proposals replace exactly one activity on the same day. One-day
+  proposals replace that day's activities only. Other days/activities are copied
+  exactly (including ordering and origin). Invalid AI scope or failed generation
+  creates no published version. Failed publication rolls back the entire transaction.
+- Earlier versions retain their proposal records and votes. Publishing never resolves
+  a feedback request automatically; the existing explicit owner actions still apply.
+- The former immediate full-revision button is replaced in the detail UI by this
+  preview workflow. The legacy `/revise` endpoint now delegates to the same proposal POST/PATCH
+  handlers and cannot publish immediately. Empty-version repair remains available;
+  its item writes share the trip publication lock.
+
+Preference-based regeneration:
+
+- Initial AI generation and applied proposals save normalized JSONB preference
+  snapshots, including the current participant IDs and submitted preference content.
+  Comparison ignores preference-row timestamps. No-op saves do not trigger warnings;
+  member joins/removals or content changes do. Manual versions do not reset the last
+  AI baseline, and unapplied proposals do not reset it either.
+- Owners see **Travel preferences have changed** and **Regenerate with updated
+  preferences**. This opens a full-trip AI proposal, followed by the same owner-only
+  Before/After application workflow. Saving preferences never calls Gemini or changes
+  the published itinerary. Members cannot request full regeneration or apply AI.
+- Old versions without a snapshot are reported as having an unknown baseline, rather
+  than falsely claiming that preferences changed. Owners may regenerate to establish
+  a baseline. Proposals become stale if preferences change before application.
+
+New endpoints:
+
+- `POST /api/trips/:tripId/edit`: `{base_version_id, activities}`.
+- `POST /api/trips/:tripId/proposals`: `{base_version_id, scope, day, item_id, instruction}`;
+  scope is `activity`, `day`, or owner-only `trip`.
+- `PATCH /api/trips/:tripId/proposals`: `{proposal_id}`; owner-only application.
+
+New source files: `components/itinerary-workspace.tsx`,
+`lib/itinerary-editing.ts`, `lib/itinerary-editing-server.ts`,
+`lib/proposal-prompt.ts`, the two routes above, `sql/trip-phase3.sql`,
+`scripts/verify-phase3.mjs`, and `scripts/verify-phase3-db.mjs`.
+Integration changes: trip detail page, initial generation route and its tests,
+`lib/gemini.ts`, one select-style selector in `app/globals.css`, and `package.json`.
+
+Run `npm run test:phase3`, the existing verification scripts, `npx tsc --noEmit`,
+`npm run lint`, and `npm run build -- --webpack`. Phase 3 tests exercise validators,
+diffs, scope enforcement, context construction, member/owner API behavior, rendered
+previews and real PostgreSQL RLS/RPC execution. The database suite covers rollback
+on simulated item insertion failure, stale drafts/proposals, exact prompt/response,
+unchanged content/history, removed-member denial and preference change detection.
+
+After installing the migration, verify live with two participants: start concurrent
+manual drafts and save one, then confirm the other is rejected without losing its
+local draft; request a member AI proposal and apply it as owner; check untouched days
+and history; update preferences, regenerate through preview, and verify the warning
+clears after applying. Verify a removed member cannot call the new RPCs, and check
+editing/preview controls on desktop and mobile. None of these live checks has been
+claimed as complete, and no Supabase migration was applied automatically.
+
+
+### Unified publication concurrency update
+
+For an existing Phase 3 installation, run **`sql/trip-publication-concurrency.sql`**
+in the same Supabase project. This incremental patch is repeatable and does not
+rewrite data. New installations should run the updated `sql/trip-phase3.sql`, which
+already includes these changes; do not rerun the original table-creation migration
+on an installed project.
+
+Manual drafts, owner-applied activity/day proposals, and owner-applied full
+regenerations all use `publish_trip_draft`. The function locks the trip, rechecks
+membership/ownership and the latest **published** base, then writes version+items
+atomically. A published version has persisted items; empty failed attempts stay in
+history and reserve their version numbers without displacing the visible published
+plan. The trip page, editing context, vote/suggestion checks and AI preference
+baseline use this same definition. Item insertion (including legacy recovery),
+preference writes and membership changes take the same trip lock. This serializes
+publication against its inputs, rather than only comparing a snapshot before an
+unprotected write. Ordinary viewing does not acquire a write lock.
+
+Every stale publication returns HTTP 409 with the exact message:
+
+> This itinerary has been updated by another traveler. Please review the latest version before applying your changes.
+
+Drafts remain in local state after rejection; reviewing the latest itinerary opens
+a new tab so it does not discard the draft. Stored AI proposals remain unapplied and
+accessible in the original version's history. The UI never silently merges or
+rebases them. A changed preference/trip snapshot returns a distinct HTTP 409 warning
+requiring a refreshed proposal. No client timestamps are used for these decisions.
+
+The legacy `/revise` endpoint is now an alias of the proposal workflow: POST requires
+an explicit `base_version_id` and creates a preview, PATCH applies an existing
+proposal with the same owner and database checks. Its former empty-body immediate
+publication contract has intentionally been retired. The compatibility button links
+to the preview controls instead of calling an immediate publisher.
+
+The expanded Phase 3 database suite verifies stale partial/full proposals after a
+member publishes a manual draft, exact conflict text, retained rejected proposals,
+preference invalidation for full regeneration, authorization, failed-attempt version
+number reservation, and repeatable incremental migration installation. These are
+isolated PostgreSQL checks; the live Supabase patch still needs manual installation
+and a two-browser concurrency check.

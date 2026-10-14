@@ -373,6 +373,9 @@ label {
   font-weight: 600;
 }
 input:not([type="file"]),
+.phase3-select,
+.travel-preferences select,
+.activity-suggestion select,
 textarea {
   display: block;
   width: 100%;

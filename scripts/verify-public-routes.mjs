@@ -49,3 +49,9 @@ assert.equal(login.searchParams.get('next'), '/trips/123');
 const retry = await get('/auth/callback?error=access_denied&next=%2Ftrips%2F123');
 assert.equal(new URL(retry.headers.get('location'), origin).searchParams.get('next'), '/trips/123');
 console.log('PASS signed-out shared-trip destination survives login redirect and OAuth cancellation');
+for (const [endpoint,method] of [['edit','POST'],['proposals','POST'],['proposals','PATCH'],['revise','POST'],['revise','PATCH']]) {
+  const response=await fetch(new URL(`/api/trips/123/${endpoint}`,origin),{method,headers:{'Content-Type':'application/json'},body:'{}',redirect:'manual'});
+  assert.equal(response.status,401,`${method} ${endpoint} must reject signed-out access`);
+  assert.match(response.headers.get('cache-control')??'',/no-store/);
+}
+console.log('PASS signed-out manual editing, AI proposal generation and proposal application are denied without caching');
