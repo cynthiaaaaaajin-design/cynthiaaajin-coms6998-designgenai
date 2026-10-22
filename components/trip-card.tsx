@@ -1,3 +1,4 @@
+import { ArrowIcon } from "@/components/arrow-icon";
 import { LandingVideo } from "./landing-video";
 import { TripCoverArt } from "@/components/trip-cover-art";
 import { normalizeDestination } from "@/lib/destinations";
@@ -53,7 +54,7 @@ export function TripCard({
               </span>
             ))}
           </div>
-          <span className="text-xs text-slate-500">Good times ahead ↗</span>
+          <span className="text-xs text-slate-500">Good times ahead <ArrowIcon /></span>
         </div>
       </div>
     </article>

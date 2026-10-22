@@ -1,3 +1,4 @@
+import { ArrowIcon } from "@/components/arrow-icon";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { tripDestination } from "@/lib/auth-destination";
@@ -40,7 +41,7 @@ export default async function Home({
               revise the plan together.
             </p>
             <div className="mt-8">
-              {user ? <Link className="button-primary" href="/trips">Continue to my trips <span aria-hidden="true">↗</span></Link> : <AuthButton next={destination} />}
+              {user ? <Link className="button-primary" href="/trips">Continue to my trips <span aria-hidden="true"><ArrowIcon /></span></Link> : <AuthButton next={destination} />}
             </div>
             {auth_error && (
               <p role="alert" className="mt-4 text-sm text-red-700">
@@ -51,7 +52,7 @@ export default async function Home({
               For the weekend escapes and the once-in-a-lifetimes.
             </p>
           </div>
-          <a href="#how-it-works" className="ocean-explore">Discover TripSync <span aria-hidden="true">↓</span></a>
+          <a href="#how-it-works" className="ocean-explore">Discover TripSync <ArrowIcon direction="down" /></a>
         </section>
         <section id="how-it-works" className="features-section">
           <div className="mb-8 flex flex-wrap items-end justify-between gap-4">

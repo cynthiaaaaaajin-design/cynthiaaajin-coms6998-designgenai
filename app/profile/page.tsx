@@ -1,3 +1,4 @@
+import { ArrowIcon } from "@/components/arrow-icon";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Header } from "@/components/header";
@@ -51,7 +52,7 @@ export default async function ProfilePage() {
         <div className="profile-grid">
           <aside>
             <div className="settings-nav">
-              Personal details <span>↗</span>
+              Personal details <span><ArrowIcon /></span>
             </div>
             <p className="mt-6 text-sm leading-6 text-slate-500">
               Big adventures start with small introductions. Add your name and a

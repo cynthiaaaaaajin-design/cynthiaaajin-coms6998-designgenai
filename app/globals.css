@@ -1424,3 +1424,13 @@ body { font-family: var(--font-interface); }
 .community-intro h1 {
   letter-spacing:-1.5px}
 }
+
+/* SVG arrows keep the same shape and size in iOS/WeChat and desktop browsers. */
+.arrow-icon {
+  display: inline-block;
+  flex-shrink: 0;
+  vertical-align: -0.15em;
+}
+.brand-icon {
+  flex-shrink: 0;
+}

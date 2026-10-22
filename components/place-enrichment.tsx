@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-img-element -- Small attributed Places images are ephemeral data URLs, not cacheable assets. */
 'use client';
+import { ArrowIcon } from "@/components/arrow-icon";
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import type { PlaceInfo } from '@/lib/place-types';
@@ -46,9 +47,9 @@ export function PlaceEnrichment({ tripId, itemId }: { tripId: string; itemId: st
         </div>
       </div>
       <div className="place-links">
-        <a href={place.mapsUrl} target="_blank" rel="noopener noreferrer">View on Google Maps ↗</a>
-        <a href={place.directionsUrl} target="_blank" rel="noopener noreferrer">Directions ↗</a>
-        {place.reviewsUrl && <a href={place.reviewsUrl} target="_blank" rel="noopener noreferrer">Reviews ↗</a>}
+        <a href={place.mapsUrl} target="_blank" rel="noopener noreferrer">View on Google Maps <ArrowIcon /></a>
+        <a href={place.directionsUrl} target="_blank" rel="noopener noreferrer">Directions <ArrowIcon /></a>
+        {place.reviewsUrl && <a href={place.reviewsUrl} target="_blank" rel="noopener noreferrer">Reviews <ArrowIcon /></a>}
       </div>
       <p className="places-attribution"><span translate="no">Google Maps</span>{place.attributions.map((author, index) => <span key={index}> · {author.uri ? <a href={author.uri} target="_blank" rel="noopener noreferrer">{author.name}</a> : author.name}</span>)}</p>
       <div className="mt-2 flex gap-3 text-xs text-slate-600"><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link></div>

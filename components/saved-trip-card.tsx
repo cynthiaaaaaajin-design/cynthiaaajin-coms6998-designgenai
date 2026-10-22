@@ -1,3 +1,4 @@
+import { ArrowIcon } from "@/components/arrow-icon";
 import { DestinationCoverPhoto } from "@/components/destination-cover-photo";
 import { TravelerInitials } from "@/components/traveler-initials";
 import type { CSSProperties } from "react";
@@ -61,7 +62,7 @@ export function SavedTripCard({ trip, index, viewerName }: { trip: Trip; index: 
         <div className="card-crew mt-4"><TravelerInitials name={trip.isOwner ? viewerName : trip.ownerName} /><span>{trip.travelerCount != null ? `${trip.travelerCount} ${trip.travelerCount === 1 ? 'traveler' : 'travelers'}` : trip.isOwner ? 'Your adventure' : 'A shared adventure'}</span></div>
         <p className="collection-status">{status}</p>
         <Link href={`/trips/${trip.id}`} className="button-secondary mt-5">
-          Open trip <span className="cta-arrow" aria-hidden="true">↗</span>
+          Open trip <span className="cta-arrow" aria-hidden="true"><ArrowIcon /></span>
         </Link>
       </div>
     </article>

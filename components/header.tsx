@@ -1,3 +1,4 @@
+import { ArrowIcon } from "@/components/arrow-icon";
 import Link from "next/link";
 import { AuthButton } from "./auth-buttons";
 
@@ -12,7 +13,7 @@ export function Header({
     <header className="site-header">
       <Link href="/?welcome=1" className="brand" aria-label="TripSync home">
         <span className="brand-icon" aria-hidden="true">
-          ↗
+          <ArrowIcon size={24} />
         </span>
         TripSync<span className="text-teal-600">.</span>
       </Link>
@@ -39,7 +40,7 @@ export function Header({
           </>
         ) : (
           <Link href="/#how-it-works" className="text-sm">
-            A better way to get away <span aria-hidden="true">↗</span>
+            A better way to get away <span aria-hidden="true"><ArrowIcon /></span>
           </Link>
         )}
       </nav>

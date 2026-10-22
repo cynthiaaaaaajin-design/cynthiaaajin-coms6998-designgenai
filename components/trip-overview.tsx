@@ -1,4 +1,5 @@
 'use client';
+import { ArrowIcon } from "@/components/arrow-icon";
 import { useState } from 'react';
 
 export function TripOverview({ days }: { days: { day: number; summary: string }[] }) {
@@ -9,7 +10,7 @@ export function TripOverview({ days }: { days: { day: number; summary: string }[
     <h3 id="trip-overview-title">Trip overview</h3>
     <ol id="trip-overview-days" aria-label="Daily itinerary overview">{visible.map(({ day, summary }) => (
       <li key={day}><a href={`#day-${day}`}>
-        <strong>Day {day}</strong><span>{summary}</span><span aria-hidden="true" className="overview-arrow">↗</span>
+        <strong>Day {day}</strong><span>{summary}</span><span aria-hidden="true" className="overview-arrow"><ArrowIcon /></span>
       </a></li>
     ))}</ol>
     {days.length > 3 && <button type="button" className="overview-expand" aria-expanded={expanded} aria-controls="trip-overview-days" onClick={() => setExpanded(value => !value)}>{expanded ? 'Show first 3 days' : `View all ${days.length} days`} <span aria-hidden="true">{expanded ? '−' : '+'}</span></button>}

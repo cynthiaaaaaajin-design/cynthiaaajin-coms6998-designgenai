@@ -1,4 +1,5 @@
 "use client";
+import { ArrowIcon } from "@/components/arrow-icon";
 import { tripDestination } from "@/lib/auth-destination";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -53,7 +54,7 @@ export function AuthButton({ logout = false, next }: { logout?: boolean; next?: 
             <span className="google-mark" aria-hidden="true">
               G
             </span>{" "}
-            Continue with Google <span aria-hidden="true">↗</span>
+            Continue with Google <span aria-hidden="true"><ArrowIcon /></span>
           </>
         )}
       </button>

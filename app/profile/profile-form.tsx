@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-img-element -- Private signed avatar URLs bypass the shared image optimizer. */
 "use client";
+import { ArrowIcon } from "@/components/arrow-icon";
 
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -294,7 +295,7 @@ export function ProfileForm({
           </Link>
           <button type="submit" className="button-primary" disabled={busy}>
             {busy ? "Saving…" : "Save changes"}
-            <span aria-hidden="true">↗</span>
+            <span aria-hidden="true"><ArrowIcon /></span>
           </button>
         </div>
       </form>
