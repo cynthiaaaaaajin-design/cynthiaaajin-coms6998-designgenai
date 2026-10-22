@@ -6,7 +6,7 @@ export function Header({
   active,
 }: {
   signedIn?: boolean;
-  active?: "trips" | "profile";
+  active?: "trips" | "profile" | "community";
 }) {
   return (
     <header className="site-header">
@@ -20,6 +20,7 @@ export function Header({
         aria-label="Main navigation"
         className="flex items-center gap-4 sm:gap-8"
       >
+        <Link href="/community" aria-current={active === "community" ? "page" : undefined}>Community</Link>
         {signedIn ? (
           <>
             <Link
@@ -37,9 +38,9 @@ export function Header({
             <AuthButton logout />
           </>
         ) : (
-          <a href="#how-it-works" className="text-sm">
+          <Link href="/#how-it-works" className="text-sm">
             A better way to get away <span aria-hidden="true">↗</span>
-          </a>
+          </Link>
         )}
       </nav>
     </header>

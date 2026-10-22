@@ -41,3 +41,9 @@ const invitePath = '/invite/' + 'a'.repeat(64);
 assert.equal((await check({ next: invitePath, profile: null })).pathname, invitePath);
 assert.equal((await check({ next: invitePath, exchangeError: true })).searchParams.get('next'), invitePath);
 console.log('PASS: invitation destination preserved for new-user OAuth and failed-login retry.');
+
+const communityPath='/community/12345678-1234-4234-8234-123456789abc';
+assert.equal((await check({next:communityPath,profile:null})).pathname,communityPath);
+assert.equal((await check({next:communityPath,exchangeError:true})).searchParams.get('next'),communityPath);
+for(const input of ['/community//evil.test','/community?next=https://evil.test','/community/../profile','/community/invalid']) assert.equal(destination.tripDestination(input),null);
+console.log('PASS: community rating destination preserved across OAuth; malformed community redirects rejected.');

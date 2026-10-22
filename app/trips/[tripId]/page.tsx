@@ -1,3 +1,4 @@
+import { PublicationControls } from '@/components/community-controls';
 import { TravelPreferences } from '@/components/travel-preferences';
 import { ActivitySuggestion } from '@/components/activity-suggestion';
 import { SuggestionsCenter } from '@/components/suggestions-center';
@@ -57,6 +58,7 @@ export default async function TripDetail({ params, searchParams }: {
   const trip = await accessibleTrip(supabase, tripId, user.id);
   if (!trip) notFound();
   const isOwner = trip.user_id === user.id;
+  const publication = isOwner ? await supabase.from('community_posts').select('id,status,description').eq('source_trip_id', tripId).maybeSingle() : { data: null, error: null };
   let travelers: Traveler[] = [];
   let travelersError = false;
   if (isOwner) {
@@ -172,6 +174,7 @@ export default async function TripDetail({ params, searchParams }: {
           <div className="trip-detail-cover"><DestinationHero tripId={tripId} destination={trip.destination ?? ""} /></div>
         </div>
         {isOwner && <TripActions tripId={tripId} />}
+        {isOwner && <PublicationControls tripId={tripId} post={publication.data} unavailable={!!publication.error} />}
         {isOwner && !placesEnabled() && <p className="notice mt-4">Google place details and map previews are not enabled for this deployment. Configure the server Places API key to enable them; your itinerary and place search links remain available.</p>}
         <TravelPreferences tripId={tripId} userId={user.id} people={preferencePeople} preferences={preferences} error={preferencesError}>
           {isOwner && !versionError && !version && !generationIssue && <GenerateItineraryForm tripId={tripId} submitted={preferences.length} total={preferencePeople.length} preferencesError={preferencesError} />}

@@ -914,3 +914,17 @@ preference invalidation for full regeneration, authorization, failed-attempt ver
 number reservation, and repeatable incremental migration installation. These are
 isolated PostgreSQL checks; the live Supabase patch still needs manual installation
 and a two-browser concurrency check.
+
+## Week 6 — Community + separate Admin
+
+Trip owners can publish a separate, public snapshot of their latest saved itinerary and withdraw it without changing the private workspace. Community visitors browse/search destinations and view activity details with the existing Google destination photo flow. Signed-in users can upvote/downvote a publication, change their vote or remove it. Community votes are separate from existing group activity feedback.
+
+The independent `trypsync-admin` app manages snapshot CRUD, reads users/profiles and both kinds of ratings, and presents database statistics. It uses the same Supabase project and enforces Google login plus the database superadmin flag on every privileged operation.
+
+Apply **one copy** of `sql/week6-community-admin.sql` before using these features. Follow [Week 6 setup](sql/week6-setup.md) for administrator bootstrapping, OAuth callbacks, deployment and acceptance checks. Until then Community displays an unavailable state; existing private trip features still work.
+
+```sh
+npm run test:week6
+```
+
+No live migration or role elevation is performed by the application or these tests.
