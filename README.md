@@ -928,3 +928,7 @@ npm run test:week6
 ```
 
 No live migration or role elevation is performed by the application or these tests.
+
+## Week 7 — admin observability
+
+See [Week 7 setup and acceptance checks](sql/week7-setup.md). The existing main-app and admin Gemini helpers now record real generation requests/responses and use database-backed chain mix/model configuration. Apply only one copy of `sql/week7-observability.sql` to the shared Supabase project.
