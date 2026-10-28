@@ -19,7 +19,7 @@ function load(path, dependencies = {}) {
 }
 const travelerHelpers = load('../lib/travelers.ts');
 const itinerary = load('../lib/itinerary.ts');
-const server = load('../lib/travelers-server.ts', { 'server-only': {}, './trip-people': { loadTripPeople: async () => null } });
+const server = load('../lib/travelers-server.ts', { 'server-only': {}, './community-imports': { loadCommunityOrigins: async () => [] }, './trip-people': { loadTripPeople: async () => null } });
 const ownerId = '11111111-1111-4111-8111-111111111111';
 const travelerId = '22222222-2222-4222-8222-222222222222';
 assert.equal(travelerHelpers.travelerEmail({ email: ' Friend@Example.com ' }), 'friend@example.com');

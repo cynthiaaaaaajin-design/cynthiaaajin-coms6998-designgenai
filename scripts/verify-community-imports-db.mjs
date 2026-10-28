@@ -1,0 +1,70 @@
+import {PGlite} from '@electric-sql/pglite';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const db=new PGlite();
+const owner='11111111-1111-4111-8111-111111111111',viewer='22222222-2222-4222-8222-222222222222',other='33333333-3333-4333-8333-333333333333';
+const post='44444444-4444-4444-8444-444444444444';
+await db.exec(`create role anon;create role authenticated;create schema auth;
+create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
+grant usage on schema auth to authenticated,anon;grant execute on function auth.uid() to authenticated,anon;
+create table profiles(id uuid primary key);
+insert into profiles values('${owner}'),('${viewer}'),('${other}');
+create table trips(id bigint generated always as identity primary key,user_id uuid references profiles(id),title text,destination text,start_date date,end_date date);
+create table trip_members(trip_id bigint,user_id uuid);
+create table itinerary_versions(id uuid primary key default gen_random_uuid(),trip_id bigint references trips(id) on delete cascade,version_number integer,created_by uuid,source text check(source in ('manual','ai_initial','ai_revision')),prompt_text text,response_text text,unique(trip_id,version_number));
+create table itinerary_items(id uuid primary key default gen_random_uuid(),version_id uuid references itinerary_versions(id) on delete cascade,day_number integer,position integer,start_time time,title text,description text,location text,origin text check(origin in ('manual','ai')),unique(version_id,day_number,position));
+create table community_posts(id uuid primary key,title text,destination text,author_name text,days integer,activities jsonb,status text);
+create function collaboration_participant(t bigint,u uuid) returns boolean language sql stable security definer set search_path='' as $$select exists(select 1 from public.trips where id=t and user_id=u) or exists(select 1 from public.trip_members where trip_id=t and user_id=u)$$;
+alter table trips enable row level security;grant select on trips to authenticated;
+create policy private_trip on trips for select to authenticated using(collaboration_participant(id,auth.uid()));`);
+const sql=readFileSync(new URL('../sql/week6-community-admin.sql',import.meta.url),'utf8');
+await db.exec(sql.slice(sql.indexOf('create function public.community_clean_activities'),sql.indexOf('create function public.publish_community_trip')));
+await db.exec(readFileSync(new URL('../sql/community-imports.sql',import.meta.url),'utf8'));
+const activities=[{day_number:1,position:4,start_time:'09:00',title:'Museum',description:'Art',location:'Madrid',private_prompt:'DO NOT COPY'},{day_number:2,position:2,start_time:null,title:'Park',description:null,location:'Seville'}];
+await db.query("insert into community_posts values($1,'Public inspiration','Madrid, Seville','Cynthia',2,$2::jsonb,'published')",[post,JSON.stringify(activities)]);
+async function as(user,sql,args=[],role='authenticated'){
+ await db.exec(`reset role;set role ${role}`);await db.query("select set_config('request.jwt.claim.sub',$1,false)",[user||'']);return db.query(sql,args);
+}
+await assert.rejects(()=>as(null,'select import_community_trip($1,$2)',[post,'2026-11-01'],'anon'));
+await assert.rejects(()=>as(viewer,'select import_community_trip($1,null)',[post]));
+const importSql='select import_community_trip($1,$2) id';
+const id=(await as(viewer,importSql,[post,'2026-11-01'])).rows[0].id;
+assert.equal((await as(viewer,importSql,[post,'2026-12-01'])).rows[0].id,id);
+const trip=(await as(viewer,'select * from trips where id=$1',[id])).rows[0];
+assert.equal(trip.user_id,viewer);assert.equal(new Date(trip.end_date).toISOString().slice(0,10),'2026-11-02');
+assert.equal((await as(other,'select * from trips where id=$1',[id])).rows.length,0);
+let origin=(await as(viewer,'select * from community_imports where trip_id=$1',[id])).rows[0];
+assert.equal(origin.author_name,'Cynthia');assert.equal(origin.adopted_at,null);
+assert.equal((await as(owner,'select * from community_imports')).rows.length,0);
+await assert.rejects(()=>as(viewer,"update community_imports set adopted_at=now() where trip_id=$1",[id]));
+await db.exec('reset role');
+const items=(await db.query('select * from itinerary_items where version_id=$1 order by day_number,position',[origin.imported_version_id])).rows;
+assert.deepEqual(items.map(x=>x.position),[0,0]);assert(!JSON.stringify(items).includes('DO NOT COPY'));
+assert.equal((await db.query('select count(*) n from trip_members where trip_id=$1',[id])).rows[0].n,0);
+// Opening a preview (empty version) and a no-op saved version do not adopt.
+await db.query("insert into itinerary_versions(trip_id,version_number,created_by,source) values($1,2,$2,'ai_revision')",[id,viewer]);
+const noOp=(await db.query("insert into itinerary_versions(trip_id,version_number,created_by,source) values($1,3,$2,'manual') returning id",[id,viewer])).rows[0].id;
+await db.query('insert into itinerary_items(version_id,day_number,position,start_time,title,description,location,origin) select $1,day_number,position,start_time,title,description,location,origin from itinerary_items where version_id=$2',[noOp,origin.imported_version_id]);
+assert.equal((await db.query('select adopted_at from community_imports where trip_id=$1',[id])).rows[0].adopted_at,null);
+// A rolled-back edit cannot change attribution.
+await db.exec('begin');
+const rolled=(await db.query("insert into itinerary_versions(trip_id,version_number,created_by,source) values($1,4,$2,'manual') returning id",[id,viewer])).rows[0].id;
+await db.query("insert into itinerary_items(version_id,day_number,position,title,origin) values($1,1,0,'Changed','manual')",[rolled]);await db.exec('rollback');
+assert.equal((await db.query('select adopted_at from community_imports where trip_id=$1',[id])).rows[0].adopted_at,null);
+// Actual committed content changes switch the badge; provenance remains.
+const changed=(await db.query("insert into itinerary_versions(trip_id,version_number,created_by,source) values($1,4,$2,'manual') returning id",[id,viewer])).rows[0].id;
+await db.query("insert into itinerary_items(version_id,day_number,position,title,origin) values($1,1,0,'Personalized museum visit','manual')",[changed]);
+assert.ok((await db.query('select adopted_at from community_imports where trip_id=$1',[id])).rows[0].adopted_at);
+await db.exec("update community_posts set status='hidden'");
+await assert.rejects(()=>as(other,importSql,[post,'2026-11-01']));
+await db.exec('reset role;delete from community_posts');
+assert.equal((await as(viewer,'select * from trips where id=$1',[id])).rows.length,1);
+assert.equal((await as(viewer,'select author_name from community_imports where trip_id=$1',[id])).rows[0].author_name,'Cynthia');
+// Item insertion failure rolls the complete import back.
+await db.exec('reset role');
+await db.query("insert into community_posts values($1,'Broken copy','Paris','Other',1,$2::jsonb,'published')",[post,JSON.stringify([{day_number:1,position:0,start_time:null,title:'Fail fixture',description:null,location:null}])]);
+await db.exec("create function fail_fixture() returns trigger language plpgsql as $$begin if new.title='Fail fixture' then raise exception 'simulated failure';end if;return new;end$$;create trigger fail_fixture before insert on itinerary_items for each row execute function fail_fixture();");
+await assert.rejects(()=>as(other,importSql,[post,'2026-11-01']));
+await db.exec('reset role');assert.equal((await db.query('select count(*) n from trips')).rows[0].n,1);
+console.log('PASS Community imports: owner isolation, atomic copy, idempotence, public-only content, normalized ordering, private provenance, no-op/preview/rollback stability, adoption on saved change and survival after withdrawal/deletion.');
+await db.close();

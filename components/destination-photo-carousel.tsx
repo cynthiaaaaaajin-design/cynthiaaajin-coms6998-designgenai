@@ -4,7 +4,9 @@ import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { DestinationPhoto } from '@/lib/google-places';
 
-export function DestinationPhotoCarousel({ tripId, destination, fallback }: { tripId: string; destination: string; fallback: ReactNode }) {
+export function DestinationPhotoCarousel({ tripId, destination, fallback, endpoint }: { tripId?: string; destination: string; fallback: ReactNode; endpoint?: string }) {
+  const photoEndpoint = endpoint ?? `/api/trips/${encodeURIComponent(tripId ?? '')}/destination-photo`;
+  const [visible, setVisible] = useState(false);
   const [index, setIndex] = useState(0);
   const [photos, setPhotos] = useState<Record<number, DestinationPhoto | null>>({});
   const current = photos[index];
@@ -16,6 +18,14 @@ export function DestinationPhotoCarousel({ tripId, destination, fallback }: { tr
   const [hovered, setHovered] = useState(false);
   const container = useRef<HTMLDivElement>(null);
   useEffect(() => {
+    const observer = typeof IntersectionObserver === 'undefined' ? null : new IntersectionObserver(entries => {
+      if (entries.some(entry => entry.isIntersecting)) { setVisible(true); observer?.disconnect(); }
+    });
+    if (observer && container.current) observer.observe(container.current);
+    else { const timer = setTimeout(() => setVisible(true), 0); return () => clearTimeout(timer); }
+    return () => observer?.disconnect();
+  }, []);
+  useEffect(() => {
     if (!autoPlay || hovered || count < 2 || current === undefined) return;
     const timer = window.setInterval(() => {
       const bounds = container.current?.getBoundingClientRect();
@@ -26,17 +36,17 @@ export function DestinationPhotoCarousel({ tripId, destination, fallback }: { tr
   }, [autoPlay, hovered, count, current, index]);
   useEffect(() => {
     const attempts = attempted.current;
-    if (index in photos || attempts.has(index)) return;
+    if (!visible || index in photos || attempts.has(index)) return;
     attempts.add(index);
     const controller = new AbortController();
-    fetch(`/api/trips/${encodeURIComponent(tripId)}/destination-photo?index=${index}`, { cache: 'no-store', signal: controller.signal })
+    fetch(`${photoEndpoint}?index=${index}`, { cache: 'no-store', signal: controller.signal })
       .then(response => response.ok ? response.json() : { photo: null })
       .then(data => { if (!controller.signal.aborted) { setPhotos(old => ({ ...old, [index]: data.photo ?? null })); setCount(old => data.count ?? data.photo?.count ?? old); } })
       .catch(() => { if (!controller.signal.aborted) setPhotos(old => ({ ...old, [index]: null })); });
     return () => { controller.abort(); attempts.delete(index); };
   // Loaded slides are intentionally retained only for the lifetime of this carousel.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tripId, index, retry]);
+  }, [photoEndpoint, visible, index, retry]);
   // Navigating back to a loaded slide uses only this mounted component's state.
   function go(next: number) { setAutoPlay(false); if (count) setIndex((next + count) % count); }
   return <div ref={container} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} onFocusCapture={event => { if (!(event.target instanceof Element && event.target.closest('.destination-autoplay'))) setAutoPlay(false); }} className="destination-carousel" role="region" aria-roledescription="carousel" aria-label={`${destination} destination photos`}

@@ -1,3 +1,4 @@
+import { loadCommunityOrigins } from '@/lib/community-imports';
 import { PublicationControls } from '@/components/community-controls';
 import { TravelPreferences } from '@/components/travel-preferences';
 import { ActivitySuggestion } from '@/components/activity-suggestion';
@@ -58,6 +59,7 @@ export default async function TripDetail({ params, searchParams }: {
   const trip = await accessibleTrip(supabase, tripId, user.id);
   if (!trip) notFound();
   const isOwner = trip.user_id === user.id;
+  const communityOrigin = (await loadCommunityOrigins(supabase, [tripId]))[0];
   const publication = isOwner ? await supabase.from('community_posts').select('id,status,description').eq('source_trip_id', tripId).maybeSingle() : { data: null, error: null };
   let travelers: Traveler[] = [];
   let travelersError = false;
@@ -197,7 +199,8 @@ export default async function TripDetail({ params, searchParams }: {
               </div>
             </div>}
             {!itemsError && items.length > 0 && <div className={`trip-summary-grid ${isCurrent ? 'with-consensus' : ''}`}>
-              <TripOverview key={version.id} days={days.map(day => ({ day, summary: items.filter(item => item.day_number === day).map(item => item.title).join(' → ') }))} />
+              {communityOrigin && <p className="notice community-copy-notice"><strong>{communityOrigin.adopted_at ? 'Owned' : `Shared by ${communityOrigin.author_name}`}</strong> · Your independent copy, originally shared by {communityOrigin.author_name}. You own this copy and can edit, invite travelers or ask AI to revise it.</p>}
+        <TripOverview key={version.id} days={days.map(day => ({ day, summary: items.filter(item => item.day_number === day).map(item => item.title).join(' → ') }))} />
               {isCurrent && <GroupConsensus itemIds={items.map(item => item.id)} feedback={feedbackError ? null : feedback} participants={participantIds} />}
             </div>}
             <PlanningHistory tripId={tripId} versions={versions} selectedId={version.id} reviews={planningReviews} />

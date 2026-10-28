@@ -932,3 +932,7 @@ No live migration or role elevation is performed by the application or these tes
 ## Week 7 — admin observability
 
 See [Week 7 setup and acceptance checks](sql/week7-setup.md). The existing main-app and admin Gemini helpers now record real generation requests/responses and use database-backed chain mix/model configuration. Apply only one copy of `sql/week7-observability.sql` to the shared Supabase project.
+
+## Community trip copies and slideshows
+
+Community and My trips covers share the accessible destination slideshow. Save a public itinerary into a private owner-controlled copy; its card starts as “Shared by …” and becomes “Owned” after a changed itinerary is saved. Apply the additive [Community import migration](sql/community-imports-setup.md) once before deploying this change. Run `npm run test:community`.

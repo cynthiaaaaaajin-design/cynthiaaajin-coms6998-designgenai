@@ -1,4 +1,5 @@
 import 'server-only';
+import { loadCommunityOrigins } from './community-imports';
 import { loadTripPeople, personName } from './trip-people';
 import type { createClient } from '@/lib/supabase/server';
 import type { Traveler } from '@/lib/travelers';
@@ -48,7 +49,7 @@ export async function loadPrivateTrips(supabase: Client, userId: string) {
     for (const row of data) sharedIds.add(row.trip_id);
     memberCursor = data[data.length - 1].trip_id;
   }
-  const trips: { travelerCount?: number | null; isOwner: boolean; ownerName: string | null; id: string; title: string | null; destination: string | null; start_date: string | null; end_date: string | null }[] = [];
+  const trips: { communityAuthor?: string | null; communityAdopted?: boolean; travelerCount?: number | null; isOwner: boolean; ownerName: string | null; id: string; title: string | null; destination: string | null; start_date: string | null; end_date: string | null }[] = [];
   let cursor: string | undefined;
   while (true) {
     let query = supabase.from('trips').select('id::text,user_id,title,destination,start_date,end_date')
@@ -64,6 +65,11 @@ export async function loadPrivateTrips(supabase: Client, userId: string) {
       }
     }
     cursor = data[data.length - 1].id;
+  }
+  const origins = await loadCommunityOrigins(supabase, trips.map(trip => trip.id));
+  for (const trip of trips) {
+    const origin = origins.find(row => row.trip_id === trip.id);
+    if (origin) { trip.communityAuthor = origin.author_name; trip.communityAdopted = !!origin.adopted_at; }
   }
   await Promise.all(trips.map(async trip => {
     const people = await loadTripPeople(supabase, trip.id).catch(() => null);

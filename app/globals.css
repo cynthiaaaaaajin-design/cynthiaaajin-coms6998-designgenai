@@ -1434,3 +1434,16 @@ body { font-family: var(--font-interface); }
 .brand-icon {
   flex-shrink: 0;
 }
+
+/* Public destination slides and independent Community copies. */
+.community-card-art .community-photo { width:100%; height:100%; border-radius:0; aspect-ratio:auto; }
+.community-photo > .destination-carousel { width:100%; height:100%; }
+.community-card-art { position:relative; }
+.community-day-badge { pointer-events:none; z-index:2; }
+.community-open-link { display:inline-flex; align-items:center; gap:8px; margin-top:18px; color:#236b61; font-weight:600; }
+.community-save { margin:24px 0; }
+.community-save .settings-card { max-width:680px; }
+.community-copy-notice { margin-bottom:24px; }
+.sample-label.role-owner, .sample-label.role-shared { max-width:calc(100% - 32px); overflow-wrap:anywhere; }
+.community-day-badge { top:14px; bottom:auto; }
+.saved-trip-cover .destination-dots { top:66px; }
