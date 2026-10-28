@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { TravelerPhotos } from '@/components/traveler-photos';
 import { SaveCommunityTrip, type SaveContext } from '@/components/save-community-trip';
 import { notFound } from 'next/navigation';
 import { Header } from '@/components/header';
@@ -27,5 +28,6 @@ export default async function PublicPlan({ params }: { params: Promise<{ postId:
     <p className="notice">A public snapshot for inspiration. Check opening hours, prices and availability before traveling.</p>
     {Array.from({ length: post.days }, (_, i) => i + 1).map(day => <section className="community-day" key={day}><p className="eyebrow">DAY {String(day).padStart(2, '0')}</p><ol>{post.activities.filter(a => a.day_number === day).map(a => <li key={`${day}:${a.position}`}><time>{a.start_time || 'Flexible'}</time><div><h3>{a.title}</h3><p className="text-sm text-teal-800">{a.location}</p><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-600">{a.description}</p></div></li>)}</ol></section>)}
     {scoreError ? <p className="notice" role="alert">Ratings are temporarily unavailable.</p> : <CommunityVoting id={postId} signedIn={!!user} score={scores?.[0] ?? { post_id: postId, upvotes: 0, downvotes: 0, mine: null }}/>}
+    <TravelerPhotos postId={postId} signedIn={!!user}/>
   </main></>;
 }
