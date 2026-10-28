@@ -1,4 +1,4 @@
-import { LandingVideo } from '@/components/landing-video';
+import { TripInspirationCarousel } from '@/components/trip-inspiration-carousel';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
@@ -13,7 +13,7 @@ export default async function NewTrip() {
     <Link href="/trips" className="text-sm font-semibold text-teal-800">← Back to your trips</Link>
     <div className="create-trip-layout">
       <aside className="create-trip-scene" aria-label="Travel inspiration">
-        <LandingVideo />
+        <TripInspirationCarousel />
         <div className="create-scene-copy"><p className="eyebrow">A LITTLE ESCAPE STARTS HERE</p><h2>Somewhere new.<br />Something to remember.</h2><p>A place, a few days, your favorite people.</p></div>
       </aside>
       <section className="create-trip-panel" aria-labelledby="create-trip-title">
