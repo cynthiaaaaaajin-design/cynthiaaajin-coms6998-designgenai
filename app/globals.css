@@ -975,15 +975,19 @@ body { font-family: var(--font-interface); }
 .mode-detail .compact-feedback, .mode-detail .day-map { background: #EDF3F5; }
 .mode-profile { background: #EDF3F5; }
 .collection-card { display: flex; flex-direction: column; }
-.journal-section .collection-card .destination-art { height: auto; min-height: 300px; aspect-ratio: 1.15; flex: 1 0 auto; }
-.collection-card-body { padding: 16px 20px; }
+.journal-section .collection-card .destination-art { height: auto; min-height: 300px; aspect-ratio: 1.15; flex: 0 0 auto; }
+.collection-card-body { padding: 16px 20px; display: flex; flex-direction: column; flex: 1; min-width: 0; }
 .collection-card-body .card-crew { margin-top: 8px; }
 .collection-card-body .button-secondary { margin-top: 10px; padding: 7px 12px; min-height: 36px; }
 .collection-card-body .eyebrow { font-size: 10px; margin-bottom: 5px; }
-.collection-card-body h3 { font-size: 21px; }
+.collection-card-body h3 { font-size: 21px; line-height: 1.35; min-height: 2.7em; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
 .collection-status { display: inline-block; font-size: 12px; font-weight: 700; margin-top: 8px; color: #173D38; }
 .collection-status::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #D97B65; margin-right: 6px; }
-.collection-card-body > a { float: right; }
+.collection-card-attribution { margin-top: 8px; color: #64748b; font-size: 13px; line-height: 1.5; min-height: 3em; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.collection-card-actions { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-top: auto; padding-top: 12px; }
+.collection-card-actions .collection-status, .collection-card-actions .button-secondary { margin-top: 0; }
+.collection-card-body .eyebrow { min-height: 1.5em; }
+.collection-card-body .card-crew { margin-bottom: 4px; }
 .destination-carousel { touch-action: pan-y; }
 .mode-detail .trip-detail-cover { aspect-ratio: 16 / 9; height: auto; }
 .group-consensus { margin-top: 16px; padding: 18px 20px; border-radius: 14px; background: #173D38; color: #F8F9F6; }
@@ -1447,3 +1451,7 @@ body { font-family: var(--font-interface); }
 .sample-label.role-owner, .sample-label.role-shared { max-width:calc(100% - 32px); overflow-wrap:anywhere; }
 .community-day-badge { top:14px; bottom:auto; }
 .saved-trip-cover .destination-dots { top:66px; }
+
+.trip-origin { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 16px; color: #526b65; font-size: 13px; line-height: 1.6; }
+.trip-origin-badge { display: inline-flex; border-radius: 999px; padding: 5px 12px; background: #e4efeb; color: #234e46; font-weight: 650; }
+.trip-origin p { margin: 0; }

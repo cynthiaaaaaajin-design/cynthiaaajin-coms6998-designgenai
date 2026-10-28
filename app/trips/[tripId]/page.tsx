@@ -172,6 +172,10 @@ export default async function TripDetail({ params, searchParams }: {
             <h1 className="page-title break-words">{trip.title?.trim() || 'Untitled adventure'}</h1>
             <p className="mt-4 break-words text-lg text-slate-600">{normalizeDestination(trip.destination ?? '').canonical}</p>
             <p className="mt-2 text-sm text-slate-500">{formatDate(trip.start_date)} – {formatDate(trip.end_date)}</p>
+            {communityOrigin && <div className="trip-origin">
+              <span className="trip-origin-badge">{communityOrigin.adopted_at ? 'Owned' : `Shared by ${communityOrigin.author_name}`}</span>
+              <p>{communityOrigin.adopted_at ? `Originally shared by ${communityOrigin.author_name}` : 'Your independent copy · Edit or revise with AI'}</p>
+            </div>}
           </div>
           <div className="trip-detail-cover"><DestinationHero tripId={tripId} destination={trip.destination ?? ""} /></div>
         </div>
@@ -187,7 +191,7 @@ export default async function TripDetail({ params, searchParams }: {
           <section className="itinerary-version itinerary-journal mt-10" aria-labelledby="itinerary-heading">
             <div className="section-heading flex flex-wrap items-center justify-between gap-3">
               <div><p className="eyebrow">THE PLAN, DAY BY DAY</p><h2 id="itinerary-heading" className="mt-3 text-2xl font-semibold">Your itinerary</h2></div>
-              <span key={version.id} className="pill version-badge">Version {version.version_number} · {version.source === 'manual' ? 'Manually edited' : 'AI generated'}</span>
+              <span key={version.id} className="pill version-badge">Version {version.version_number} · {communityOrigin?.imported_version_id === version.id ? 'Saved from Community' : version.source === 'manual' ? 'Manually edited' : 'AI generated'}</span>
             </div>
             {!isOwner && !feedbackError && !itemsError && items.length > 0 && <div className="my-5 max-w-md">
               <p className="mb-2 flex items-center gap-2 text-sm text-slate-500">
@@ -199,8 +203,7 @@ export default async function TripDetail({ params, searchParams }: {
               </div>
             </div>}
             {!itemsError && items.length > 0 && <div className={`trip-summary-grid ${isCurrent ? 'with-consensus' : ''}`}>
-              {communityOrigin && <p className="notice community-copy-notice"><strong>{communityOrigin.adopted_at ? 'Owned' : `Shared by ${communityOrigin.author_name}`}</strong> · Your independent copy, originally shared by {communityOrigin.author_name}. You own this copy and can edit, invite travelers or ask AI to revise it.</p>}
-        <TripOverview key={version.id} days={days.map(day => ({ day, summary: items.filter(item => item.day_number === day).map(item => item.title).join(' → ') }))} />
+              <TripOverview key={version.id} days={days.map(day => ({ day, summary: items.filter(item => item.day_number === day).map(item => item.title).join(' → ') }))} />
               {isCurrent && <GroupConsensus itemIds={items.map(item => item.id)} feedback={feedbackError ? null : feedback} participants={participantIds} />}
             </div>}
             <PlanningHistory tripId={tripId} versions={versions} selectedId={version.id} reviews={planningReviews} />
