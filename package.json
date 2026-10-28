@@ -12,7 +12,8 @@
     "test:week6": "node scripts/verify-week6-db.mjs && node scripts/verify-auth-redirects.mjs",
     "test:week7": "node scripts/verify-week7-db.mjs",
     "test:community": "node scripts/verify-community-imports.mjs && node scripts/verify-community-imports-db.mjs",
-    "test:photos": "node scripts/verify-traveler-photos.mjs"
+    "test:photos": "node scripts/verify-traveler-photos.mjs",
+    "test:prompt-context": "node scripts/verify-prompt-context.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.27.0",
