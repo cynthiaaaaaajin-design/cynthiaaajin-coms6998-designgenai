@@ -20,7 +20,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pos
     start_date = parseNewTrip({ title: 'Copy', destination: 'Copy', start_date: input.start_date, end_date: input.start_date }).start_date;
   } catch { return json({ error: 'Choose a valid start date.' }, 400); }
   const { data, error } = await client.rpc('import_community_trip', { p_post_id: postId, p_start_date: start_date });
-  if (error) return json({ error: error.code === '22023' ? error.message : 'Could not save this copy. Please verify Community import setup and try again.' }, error.code === '22023' ? 400 : 503);
+  if (error) return json({ error: ['22023', '42501'].includes(error.code) ? error.message : 'Could not save this copy. Please verify Community import setup and try again.' }, error.code === '42501' ? 403 : error.code === '22023' ? 400 : 503);
   if (typeof data !== 'string' || !validTripId(data)) return json({ error: 'Could not confirm the saved copy. Check My trips before retrying.' }, 500);
   return json({ tripId: data }, 201);
 }

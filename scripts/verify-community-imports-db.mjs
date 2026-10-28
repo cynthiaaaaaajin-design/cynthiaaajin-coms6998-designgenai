@@ -13,23 +13,43 @@ create table trips(id bigint generated always as identity primary key,user_id uu
 create table trip_members(trip_id bigint,user_id uuid);
 create table itinerary_versions(id uuid primary key default gen_random_uuid(),trip_id bigint references trips(id) on delete cascade,version_number integer,created_by uuid,source text check(source in ('manual','ai_initial','ai_revision')),prompt_text text,response_text text,unique(trip_id,version_number));
 create table itinerary_items(id uuid primary key default gen_random_uuid(),version_id uuid references itinerary_versions(id) on delete cascade,day_number integer,position integer,start_time time,title text,description text,location text,origin text check(origin in ('manual','ai')),unique(version_id,day_number,position));
-create table community_posts(id uuid primary key,title text,destination text,author_name text,days integer,activities jsonb,status text);
+create table community_posts(id uuid primary key,title text,destination text,author_name text,days integer,activities jsonb,status text,owner_id uuid default '${owner}',source_trip_id bigint default 1);
 create function collaboration_participant(t bigint,u uuid) returns boolean language sql stable security definer set search_path='' as $$select exists(select 1 from public.trips where id=t and user_id=u) or exists(select 1 from public.trip_members where trip_id=t and user_id=u)$$;
 alter table trips enable row level security;grant select on trips to authenticated;
 create policy private_trip on trips for select to authenticated using(collaboration_participant(id,auth.uid()));`);
+await db.exec(`insert into trips(user_id,title,destination,start_date,end_date) values('${owner}','Original private trip','Madrid','2026-10-01','2026-10-02');`);
 const sql=readFileSync(new URL('../sql/week6-community-admin.sql',import.meta.url),'utf8');
 await db.exec(sql.slice(sql.indexOf('create function public.community_clean_activities'),sql.indexOf('create function public.publish_community_trip')));
 await db.exec(readFileSync(new URL('../sql/community-imports.sql',import.meta.url),'utf8'));
+await db.exec(readFileSync(new URL('../sql/community-import-access.sql',import.meta.url),'utf8'));
+// Patch is safe to reapply to an installed project.
+await db.exec(readFileSync(new URL('../sql/community-import-access.sql',import.meta.url),'utf8'));
 const activities=[{day_number:1,position:4,start_time:'09:00',title:'Museum',description:'Art',location:'Madrid',private_prompt:'DO NOT COPY'},{day_number:2,position:2,start_time:null,title:'Park',description:null,location:'Seville'}];
-await db.query("insert into community_posts values($1,'Public inspiration','Madrid, Seville','Cynthia',2,$2::jsonb,'published')",[post,JSON.stringify(activities)]);
+await db.query("insert into community_posts(id,title,destination,author_name,days,activities,status) values($1,'Public inspiration','Madrid, Seville','Cynthia',2,$2::jsonb,'published')",[post,JSON.stringify(activities)]);
 async function as(user,sql,args=[],role='authenticated'){
  await db.exec(`reset role;set role ${role}`);await db.query("select set_config('request.jwt.claim.sub',$1,false)",[user||'']);return db.query(sql,args);
 }
 await assert.rejects(()=>as(null,'select import_community_trip($1,$2)',[post,'2026-11-01'],'anon'));
 await assert.rejects(()=>as(viewer,'select import_community_trip($1,null)',[post]));
 const importSql='select import_community_trip($1,$2) id';
+const context='select community_save_context($1) result';
+assert.equal((await as(owner,context,[post])).rows[0].result.state,'author');
+await assert.rejects(()=>as(owner,importSql,[post,'2026-11-01']),/You shared/);
+await db.exec(`reset role;insert into trip_members values(1,'${other}')`);
+const memberContext=(await as(other,context,[post])).rows[0].result;
+assert.equal(memberContext.state,'member');assert.equal(memberContext.trip_id,'1');
+await assert.rejects(()=>as(other,importSql,[post,'2026-11-01']),/already belong/);
+const publicContext=(await as(viewer,context,[post])).rows[0].result;
+assert.equal(publicContext.state,'available');assert.equal(publicContext.trip_id,undefined);
+await db.exec('reset role;delete from trip_members');
 const id=(await as(viewer,importSql,[post,'2026-11-01'])).rows[0].id;
 assert.equal((await as(viewer,importSql,[post,'2026-12-01'])).rows[0].id,id);
+assert.equal((await as(viewer,context,[post])).rows[0].result.state,'saved');
+// Joining the source after loading the page cannot bypass the server check.
+await db.exec(`reset role;insert into trip_members values(1,'${viewer}')`);
+await assert.rejects(()=>as(viewer,importSql,[post,'2026-12-01']),/already belong/);
+assert.equal((await as(viewer,context,[post])).rows[0].result.state,'member');
+await db.exec('reset role;delete from trip_members');
 const trip=(await as(viewer,'select * from trips where id=$1',[id])).rows[0];
 assert.equal(trip.user_id,viewer);assert.equal(new Date(trip.end_date).toISOString().slice(0,10),'2026-11-02');
 assert.equal((await as(other,'select * from trips where id=$1',[id])).rows.length,0);
@@ -62,9 +82,9 @@ assert.equal((await as(viewer,'select * from trips where id=$1',[id])).rows.leng
 assert.equal((await as(viewer,'select author_name from community_imports where trip_id=$1',[id])).rows[0].author_name,'Cynthia');
 // Item insertion failure rolls the complete import back.
 await db.exec('reset role');
-await db.query("insert into community_posts values($1,'Broken copy','Paris','Other',1,$2::jsonb,'published')",[post,JSON.stringify([{day_number:1,position:0,start_time:null,title:'Fail fixture',description:null,location:null}])]);
+await db.query("insert into community_posts(id,title,destination,author_name,days,activities,status) values($1,'Broken copy','Paris','Other',1,$2::jsonb,'published')",[post,JSON.stringify([{day_number:1,position:0,start_time:null,title:'Fail fixture',description:null,location:null}])]);
 await db.exec("create function fail_fixture() returns trigger language plpgsql as $$begin if new.title='Fail fixture' then raise exception 'simulated failure';end if;return new;end$$;create trigger fail_fixture before insert on itinerary_items for each row execute function fail_fixture();");
 await assert.rejects(()=>as(other,importSql,[post,'2026-11-01']));
-await db.exec('reset role');assert.equal((await db.query('select count(*) n from trips')).rows[0].n,1);
+await db.exec('reset role');assert.equal((await db.query('select count(*) n from trips')).rows[0].n,2);
 console.log('PASS Community imports: owner isolation, atomic copy, idempotence, public-only content, normalized ordering, private provenance, no-op/preview/rollback stability, adoption on saved change and survival after withdrawal/deletion.');
 await db.close();

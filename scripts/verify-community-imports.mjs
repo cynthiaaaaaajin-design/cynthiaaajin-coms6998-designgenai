@@ -24,6 +24,9 @@ assert.equal(calls.length,0);
 const success=await request({start_date:'2026-11-01',user_id:'forged-owner',activities:[{title:'Injected'}]});assert.equal(success.status,201);assert.equal((await success.json()).tripId,'9007199254740993');
 assert.equal(calls[0].name,'import_community_trip');assert.equal(JSON.stringify(calls[0].args),JSON.stringify({p_post_id:post,p_start_date:'2026-11-01'}));
 mode='unavailable';assert.equal((await request({start_date:'2026-11-01'})).status,400);
+mode='forbidden';
+const originalRpc=client.rpc; client.rpc=async()=>({error:{code:'42501',message:'You already belong to this trip.'}});
+assert.equal((await request({start_date:'2026-11-01'})).status,403); client.rpc=originalRpc;
 const destinations=load('lib/destinations.ts');let photoCalls=[];let publicationVisible=true;
 const query={select:()=>query,eq:(column,value)=>{if(column==='status')assert.equal(value,'published');return query;},maybeSingle:async()=>({data:publicationVisible?{destination:'Madrid; Seville; Rome'}:null,error:null})};
 const photoRoute=load('app/api/community/[postId]/photo/route.ts',{'@/lib/supabase/server':{createClient:async()=>({from:table=>{assert.equal(table,'community_posts');return query;}})},'@/lib/community':community,'@/lib/destinations':destinations,'@/lib/google-places':{destinationPhoto:async(destination,index)=>{photoCalls.push({destination,index});return {src:'photo',count:5,authors:[]};}}});
@@ -44,3 +47,13 @@ assert.match(sharedCard,/Shared by Cynthia/);assert.match(sharedCard,/Your indep
 const adoptedCard=renderToStaticMarkup(createElement(cards.SavedTripCard,{trip:{...imported,communityAdopted:true},index:0}));
 assert.match(adoptedCard,/>Owned</);assert.match(adoptedCard,/Inspired by Cynthia/);
 console.log('PASS Community cards: imported owner permissions retain Shared by attribution, then show Owned while preserving the original author.');
+
+const saveUi=load('components/save-community-trip.tsx',{'react/jsx-runtime':jsx,'react':{useState:initial=>[initial,()=>{}]},'next/navigation':{useRouter:()=>({})},'next/link':{default:({children,...props})=>createElement('a',props,children)}});
+for(const state of ['author','member','saved','error']) {
+ const html=renderToStaticMarkup(createElement(saveUi.SaveCommunityTrip,{postId:post,days:2,signedIn:true,author:'Cynthia',context:{state,trip_id:state==='error'?undefined:'1'}}));
+ assert.doesNotMatch(html,/Save to My trips/);
+ if(state==='author'||state==='member')assert.match(html,/Open existing trip/);
+ if(state==='saved')assert.match(html,/Open saved copy/);
+}
+const available=renderToStaticMarkup(createElement(saveUi.SaveCommunityTrip,{postId:post,days:2,signedIn:true,author:'Cynthia',context:{state:'available'}}));assert.match(available,/Save to My trips/);
+console.log('PASS Save eligibility: authors and existing members see their existing trip; saved copies open directly; access-check errors fail closed.');

@@ -2,12 +2,18 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-export function SaveCommunityTrip({ postId, days, signedIn, author }: { postId: string; days: number; signedIn: boolean; author: string }) {
+export type SaveContext = { state: 'available' | 'author' | 'member' | 'saved' | 'unavailable' | 'signin' | 'error'; trip_id?: string | null };
+export function SaveCommunityTrip({ postId, days, signedIn, author, context }: { postId: string; days: number; signedIn: boolean; author: string; context: SaveContext }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   if (!signedIn) return <Link className="button-primary" href={`/?next=${encodeURIComponent(`/community/${postId}`)}`}>Sign in to save to My trips</Link>;
+  if (context.state === 'author' || context.state === 'member' || context.state === 'saved') return <section className="community-save">
+    <p className="text-sm text-slate-600 mb-3">{context.state === 'author' ? 'You shared this itinerary. It is already yours.' : context.state === 'member' ? 'You already joined this trip. Open your existing group trip.' : 'You already saved a copy of this itinerary.'}</p>
+    {context.trip_id && <Link className="button-secondary" href={`/trips/${context.trip_id}`}>{context.state === 'saved' ? 'Open saved copy' : 'Open existing trip'} ↗</Link>}
+  </section>;
+  if (context.state !== 'available') return <p className="notice" role="status">{context.state === 'error' ? 'Could not check whether this trip is already in your collection. Refresh before saving.' : 'This publication is no longer available for saving.'}</p>;
   return <section className="community-save">
     <button className="button-primary" type="button" onClick={() => setOpen(value => !value)} disabled={busy}>Save to My trips ↗</button>
     {open && <form className="settings-card mt-4" onSubmit={async event => {
@@ -17,7 +23,7 @@ export function SaveCommunityTrip({ postId, days, signedIn, author }: { postId: 
       try {
         const response = await fetch(`/api/community/${postId}/import`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ start_date: form.get('start_date') }) });
         const result = await response.json();
-        if (!response.ok) throw new Error(result.error || 'Could not save this trip.');
+        if (!response.ok) { if (response.status === 403) router.refresh(); throw new Error(result.error || 'Could not save this trip.'); }
         router.push(`/trips/${result.tripId}`); router.refresh();
       } catch (failure) { setError(failure instanceof Error ? failure.message : 'Save failed. Please try again.'); setBusy(false); }
     }}>
