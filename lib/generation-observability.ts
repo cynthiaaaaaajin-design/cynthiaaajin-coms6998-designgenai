@@ -1,4 +1,5 @@
 import 'server-only';
+import type { GenerationMetrics } from './generation-metrics';
 import { createClient } from './supabase/server';
 
 // Missing migration keeps existing deployments working during rollout. Other
@@ -16,13 +17,20 @@ export async function beginGeneration(kind: 'itinerary' | 'proposal', prompt: st
   return { id: data.id as string, prompt: data.prompt as string, model: data.model === 'deployment-default' ? process.env.GEMINI_MODEL || 'gemini-3.8-flash' : data.model as string };
 }
 
-export async function finishGeneration(id: string | null, response: string, failed: boolean) {
+export async function finishGeneration(id: string | null, response: string, failed: boolean, metrics?: GenerationMetrics) {
   if (!id) return;
   const client = await createClient();
-  const { error } = await client.rpc('finish_observed_generation', {
+  const args = {
     p_id: id, p_response: response.length > 80000 ? response.slice(0, 80000) + '\n[Log truncated at 80,000 characters]' : response,
     p_error: failed ? 'Generation failed or returned invalid output. See server diagnostics.' : null,
-  });
+  };
+  let { error } = metrics
+    ? await client.rpc('finish_observed_generation_metrics', { ...args, p_metrics: metrics })
+    : await client.rpc('finish_observed_generation', args);
+  if (metrics && error && ['PGRST202', '42883'].includes(error.code)) {
+    console.warn('Generation metrics migration missing; saving the original completion log.');
+    ({ error } = await client.rpc('finish_observed_generation', args));
+  }
   // Do not discard an otherwise successful itinerary if the observability write fails.
   if (error) console.error('Generation observability completion failed:', error.code);
 }

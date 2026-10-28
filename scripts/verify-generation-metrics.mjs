@@ -1,0 +1,21 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import vm from 'node:vm';
+import ts from 'typescript';
+function load(file,deps={}){const m={exports:{}};vm.runInNewContext(ts.transpileModule(readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText,{module:m,exports:m.exports,require:name=>{assert(name in deps,name);return deps[name];},process:{env:{GEMINI_API_KEY:'test'}},console,performance:{now:()=>Date.now()}});return m.exports;}
+const {buildGenerationMetrics}=load('lib/generation-metrics.ts');
+const response={text:'{"activities":[]}',candidates:[{finishReason:'STOP'}],modelVersion:'gemini-real-version',usageMetadata:{promptTokenCount:120,candidatesTokenCount:60,totalTokenCount:200,thoughtsTokenCount:20,cachedContentTokenCount:0}};
+const metrics=buildGenerationMetrics('gemini-resolved',1234.5,response);
+assert.equal(metrics.duration_ms,1235);assert.equal(metrics.total_tokens,200);assert.equal(metrics.output_tokens,60);assert.equal(metrics.cached_input_tokens,0);
+assert.equal(buildGenerationMetrics('m',0).total_tokens,null);assert.equal(buildGenerationMetrics('m',NaN).duration_ms,null);
+assert.equal(buildGenerationMetrics('m',0,{usageMetadata:{promptTokenCount:-1,candidatesTokenCount:1.5,totalTokenCount:Infinity}}).input_tokens,null);
+const completions=[];let current=response;let validationFails=false;
+const gemini=load('lib/gemini.ts',{'server-only':{},'./generation-metrics':{buildGenerationMetrics},'./generation-observability':{beginGeneration:async(kind)=>({id:kind,prompt:'Prompt',model:'gemini-resolved'}),finishGeneration:async(...args)=>completions.push(args)},'@google/genai':{GoogleGenAI:class{models={generateContent:async()=>{if(current instanceof Error)throw current;return current;}};}},'./itinerary':{parseActivities:()=>{if(validationFails)throw new Error('Invalid shape');return []; }},'./gemini-errors':{logGeminiError:async()=>{}}});
+await gemini.generateItinerary('Prompt',1);assert.equal(completions.at(-1)[2],false);assert.equal(completions.at(-1)[3].model,'gemini-resolved');assert.equal(completions.at(-1)[3].model_version,'gemini-real-version');assert.equal(completions.at(-1)[3].total_tokens,200);
+validationFails=true;await assert.rejects(()=>gemini.generateItinerary('Prompt',1));assert.equal(completions.at(-1)[2],true);assert.equal(completions.at(-1)[3].input_tokens,120);
+await gemini.generateItineraryProposal('Prompt');assert.equal(completions.at(-1)[0],'proposal');assert.equal(completions.at(-1)[3].total_tokens,200);
+current=new Error('Provider failure');await assert.rejects(()=>gemini.generateItineraryProposal('Prompt'));assert.equal(completions.at(-1)[3].total_tokens,null);assert.equal(completions.at(-1)[3].model,'gemini-resolved');
+console.log('PASS generation metrics: actual model/version, provider totals including thinking, zero vs missing usage, duration, itinerary/proposal capture and validation/provider failures. SDK calls mocked.');
+const calls=[];const obs=load('lib/generation-observability.ts',{'server-only':{},'./supabase/server':{createClient:async()=>({rpc:async(name)=>{calls.push(name);return {error:name==='finish_observed_generation_metrics'?{code:'PGRST202'}:null};}})}});
+await obs.finishGeneration('test-id','{}',false,metrics);assert.deepEqual(calls,['finish_observed_generation_metrics','finish_observed_generation']);
+console.log('PASS rolling deployment compatibility: missing metrics RPC falls back to the legacy completion log.');

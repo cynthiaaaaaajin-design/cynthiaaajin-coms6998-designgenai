@@ -1,5 +1,7 @@
 import 'server-only';
 import { beginGeneration, finishGeneration } from './generation-observability';
+import { buildGenerationMetrics } from './generation-metrics';
+import type { GenerateContentResponse } from '@google/genai';
 import { GoogleGenAI } from '@google/genai';
 import { parseActivities } from './itinerary';
 import { logGeminiError } from './gemini-errors';
@@ -34,6 +36,8 @@ export async function generateItinerary(prompt: string, days: number, captureRes
   let stage = 'Gemini configuration';
   let observed: Awaited<ReturnType<typeof beginGeneration>> | undefined;
   let rawResponse = '';
+  const startedAt = performance.now();
+  let responseMetadata: Pick<GenerateContentResponse, 'modelVersion' | 'usageMetadata'> | undefined;
   try {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
@@ -64,6 +68,7 @@ export async function generateItinerary(prompt: string, days: number, captureRes
         },
       },
     });
+    responseMetadata = { modelVersion: response.modelVersion, usageMetadata: response.usageMetadata };
     rawResponse = response.text ?? '';
     captureResponse?.(rawResponse);
     stage = 'Gemini response validation';
@@ -74,10 +79,10 @@ export async function generateItinerary(prompt: string, days: number, captureRes
     }
     const responseText = response.text;
     const activities = parseActivities(responseText, days);
-    await finishGeneration(observed.id, rawResponse, false);
+    await finishGeneration(observed.id, rawResponse, false, buildGenerationMetrics(observed.model, performance.now() - startedAt, responseMetadata));
     return { responseText, activities };
   } catch (error) {
-    if (observed) await finishGeneration(observed.id, rawResponse, true);
+    if (observed) await finishGeneration(observed.id, rawResponse, true, buildGenerationMetrics(observed.model, performance.now() - startedAt, responseMetadata));
     if (logErrors) await logGeminiError(error, stage);
     // Preserve the original SDK error (including status/body) for the route logger.
     throw error;
@@ -97,6 +102,8 @@ export async function generateItineraryProposal(prompt: string) {
   };
   let observed: Awaited<ReturnType<typeof beginGeneration>> | undefined;
   let rawResponse = '';
+  const startedAt = performance.now();
+  let responseMetadata: Pick<GenerateContentResponse, 'modelVersion' | 'usageMetadata'> | undefined;
   try {
     observed = await beginGeneration('proposal', prompt);
     const response=await new GoogleGenAI({apiKey}).models.generateContent({
@@ -107,9 +114,10 @@ export async function generateItineraryProposal(prompt: string) {
         httpOptions:{timeout:90000,retryOptions:{attempts:1},extraBody:{generationConfig:{responseFormat:{text:{mimeType:'APPLICATION_JSON',schema:proposalSchema}}}}},
       },
     });
+    responseMetadata = { modelVersion: response.modelVersion, usageMetadata: response.usageMetadata };
     rawResponse = response.text ?? '';
     if(response.candidates?.[0]?.finishReason!=='STOP' || !response.text) throw new Error('AI did not return a complete proposal.');
-    await finishGeneration(observed.id, rawResponse, false);
+    await finishGeneration(observed.id, rawResponse, false, buildGenerationMetrics(observed.model, performance.now() - startedAt, responseMetadata));
     return response.text;
-  } catch(error) { if(observed) await finishGeneration(observed.id, rawResponse, true); await logGeminiError(error,'AI proposal generation'); throw error; }
+  } catch(error) { if(observed) await finishGeneration(observed.id, rawResponse, true, buildGenerationMetrics(observed.model, performance.now() - startedAt, responseMetadata)); await logGeminiError(error,'AI proposal generation'); throw error; }
 }
