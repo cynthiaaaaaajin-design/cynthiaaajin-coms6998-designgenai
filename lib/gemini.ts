@@ -1,3 +1,4 @@
+import type { GenerationContext } from './generation-context';
 import 'server-only';
 import { beginGeneration, finishGeneration } from './generation-observability';
 import { buildGenerationMetrics } from './generation-metrics';
@@ -32,7 +33,7 @@ const responseJsonSchema = {
   additionalProperties: false,
 };
 
-export async function generateItinerary(prompt: string, days: number, captureResponse?: (text: string) => void, logErrors = true) {
+export async function generateItinerary(prompt: string, days: number, captureResponse?: (text: string) => void, logErrors = true, context?: GenerationContext) {
   let stage = 'Gemini configuration';
   let observed: Awaited<ReturnType<typeof beginGeneration>> | undefined;
   let rawResponse = '';
@@ -43,7 +44,7 @@ export async function generateItinerary(prompt: string, days: number, captureRes
     if (!apiKey) {
       throw Object.assign(new Error('GEMINI_API_KEY is not configured on the server.'), { code: 'MISSING_API_KEY' });
     }
-    observed = await beginGeneration('itinerary', prompt);
+    observed = await beginGeneration('itinerary', prompt, context);
     const ai = new GoogleGenAI({ apiKey });
     stage = 'Gemini structured generation (responseFormat)';
     const response = await ai.models.generateContent({
@@ -90,7 +91,7 @@ export async function generateItinerary(prompt: string, days: number, captureRes
 }
 
 // Proposal generation does not create a published version. Callers persist only validated previews.
-export async function generateItineraryProposal(prompt: string) {
+export async function generateItineraryProposal(prompt: string, context?: GenerationContext) {
   const apiKey=process.env.GEMINI_API_KEY;
   if(!apiKey) throw new Error('Gemini is not configured.');
   const proposalSchema={
@@ -105,7 +106,7 @@ export async function generateItineraryProposal(prompt: string) {
   const startedAt = performance.now();
   let responseMetadata: Pick<GenerateContentResponse, 'modelVersion' | 'usageMetadata'> | undefined;
   try {
-    observed = await beginGeneration('proposal', prompt);
+    observed = await beginGeneration('proposal', prompt, context);
     const response=await new GoogleGenAI({apiKey}).models.generateContent({
       model:observed.model,contents:observed.prompt,
       config:{

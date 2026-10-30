@@ -1,10 +1,11 @@
 import 'server-only';
+import type { GenerationContext } from './generation-context';
 import type { GenerationMetrics } from './generation-metrics';
 import { createClient } from './supabase/server';
 
 // Missing migration keeps existing deployments working during rollout. Other
 // configuration/authorization errors fail explicitly, rather than bypassing mix.
-export async function beginGeneration(kind: 'itinerary' | 'proposal', prompt: string) {
+export async function beginGeneration(kind: 'itinerary' | 'proposal', prompt: string, context?: GenerationContext) {
   const client = await createClient();
   const { data, error } = await client.rpc('begin_observed_generation', { p_kind: kind, p_prompt: prompt });
   if (error) {
@@ -13,6 +14,10 @@ export async function beginGeneration(kind: 'itinerary' | 'proposal', prompt: st
       return { id: null, prompt, model: process.env.GEMINI_MODEL || 'gemini-3.8-flash' };
     }
     throw new Error('Generation configuration unavailable. Check enabled chains, mix and models.');
+  }
+  if(context){
+    const linked=await client.rpc('link_observed_generation',{p_id:data.id,p_trip_id:context.tripId??null,p_version_id:context.versionId??null,p_operation:context.operation,p_scope:context.scope??null,p_day:context.day??null,p_item_id:context.itemId??null});
+    if(linked.error)console.error('Generation context could not be recorded:',linked.error.code);
   }
   return { id: data.id as string, prompt: data.prompt as string, model: data.model === 'deployment-default' ? process.env.GEMINI_MODEL || 'gemini-3.8-flash' : data.model as string };
 }

@@ -63,7 +63,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tri
       method = 'saved_prompt';
       if (!version.prompt_text?.trim()) throw new Error('No saved prompt');
       stage = 'generate from saved prompt';
-      const generated = await generateItinerary(version.prompt_text, days, undefined, false);
+      const generated = await generateItinerary(version.prompt_text, days, undefined, false, {tripId,versionId:version.id,operation:'repair',scope:'trip'});
       activities = generated.activities;
       regeneratedResponse = generated.responseText;
     }

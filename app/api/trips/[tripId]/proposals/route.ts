@@ -34,7 +34,7 @@ export async function POST(request: Request,{params}:{params:Promise<{tripId:str
     const trip={destination:access.trip.destination,start_date:access.trip.start_date,end_date:access.trip.end_date};
     const prompt=buildProposalPrompt({...input,trip,days,items,preferences,votes,requests});
     let response: string;
-    try {response=await generateItineraryProposal(prompt);parseProposal(response,days,input.scope,input.day);}
+    try {response=await generateItineraryProposal(prompt,{tripId,versionId:input.base,operation:'revision',scope:input.scope,day:input.day,itemId:input.itemId});parseProposal(response,days,input.scope,input.day);}
     catch {return json({error:'AI could not produce a valid proposal. The current itinerary is unchanged. Please try again.'},502);}
     const result=await access.client.rpc('save_itinerary_proposal',{
       p_trip_id:tripId,p_base_version_id:input.base,p_scope:input.scope,p_target_day:input.day,p_target_item_id:input.itemId,

@@ -79,7 +79,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tri
   let generationError: unknown;
   let failed = false;
   try {
-    generated = await generateItinerary(prompt, days, text => { rawResponse = text; });
+    generated = await generateItinerary(prompt, days, text => { rawResponse = text; }, true, {tripId,versionId:version.id,operation:'initial',scope:'trip'});
   } catch (error) {
     failed = true;
     generationError = error;

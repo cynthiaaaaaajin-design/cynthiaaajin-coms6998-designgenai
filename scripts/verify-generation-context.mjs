@@ -1,0 +1,55 @@
+import { PGlite } from '@electric-sql/pglite';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+const db=new PGlite();
+const admin='11111111-1111-4111-8111-111111111111',user='22222222-2222-4222-8222-222222222222';
+await db.exec(`create role anon;create role authenticated;create schema auth;create schema storage;
+create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
+create function public.is_superadmin() returns boolean language sql stable as $$select auth.uid()='${admin}'::uuid$$;
+grant usage on schema auth to authenticated,anon;grant execute on function auth.uid() to authenticated,anon;
+create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
+create table storage.objects(id uuid default gen_random_uuid(),bucket_id text,name text);alter table storage.objects enable row level security;
+grant usage on schema storage to authenticated;grant select,insert,delete on storage.objects to authenticated;`);
+await db.exec(readFileSync(new URL('../sql/week7-observability.sql',import.meta.url),'utf8'));
+async function as(who,sql,args=[],role='authenticated'){
+ await db.exec(`reset role;set role ${role}`);await db.query("select set_config('request.jwt.claim.sub',$1,false)",[who||'']);return db.query(sql,args);
+}
+
+await db.exec(`create table public.trips(id bigint primary key,user_id uuid,title text,destination text);
+create table public.trip_members(trip_id bigint,user_id uuid);
+create table public.itinerary_versions(id uuid primary key,trip_id bigint,version_number integer,source text,created_by uuid,response_text text);
+create table public.itinerary_items(id uuid primary key,version_id uuid,day_number integer);
+create table public.itinerary_proposals(id uuid primary key,trip_id bigint,base_version_id uuid,created_by uuid,scope text,target_day integer,target_item_id uuid,response_text text);
+insert into trips values(9007199254740993,'${user}','Boston Autumn Weekend','Boston'),(2,'${admin}','Private','Elsewhere');
+insert into itinerary_versions values('${user}',9007199254740993,1,'ai_initial','${user}','saved'),('${admin}',2,1,'ai_initial','${admin}','private');`);
+await db.exec(readFileSync(new URL('../sql/generation-context.sql',import.meta.url),'utf8'));
+const begin="select begin_observed_generation('itinerary','Traveler request') result";
+const link='select link_observed_generation($1,$2,$3,$4,$5,$6,$7)';
+const r=(await as(user,begin)).rows[0].result;
+await assert.rejects(()=>as(admin,link,[r.id,'9007199254740993',user,'initial','trip',null,null]));
+await assert.rejects(()=>as(user,link,[r.id,'2',admin,'initial','trip',null,null]));
+await assert.rejects(()=>as(user,link,[r.id,'9007199254740993',admin,'initial','trip',null,null]));
+await assert.rejects(()=>as(user,link,[r.id,'9007199254740993',user,'revision','activity',1,admin]));
+await as(user,link,[r.id,'9007199254740993',user,'initial','trip',null,null]);
+await assert.rejects(()=>as(user,link,[r.id,'9007199254740993',user,'initial','trip',null,null]));
+await as(user,'select finish_observed_generation($1,$2,null)',[r.id,'saved']);
+let logs=(await as(admin,"select admin_observability_list('llm-responses',$1,0) result",[r.id])).rows[0].result.rows;
+assert.equal(logs[0].data.generation_context.trip_id,'9007199254740993');assert.equal(logs[0].data.generation_context.trip_title,'Boston Autumn Weekend');
+await db.exec('reset role');await db.exec("update trips set title='Renamed' where id=9007199254740993");
+logs=(await as(admin,"select admin_observability_list('llm-responses',$1,0) result",[r.id])).rows[0].result.rows;
+assert.equal(logs[0].data.generation_context.trip_title,'Boston Autumn Weekend');
+// Historical matching is exact, same account, and unique; ambiguous replies stay unknown.
+await db.exec('reset role');
+await db.exec(`insert into admin_resources(resource,data) values('generation-requests',jsonb_build_object('user_id','${user}','kind','itinerary'))`);
+const old=(await db.query("select id from admin_resources where resource='generation-requests' and not data?'generation_context'")).rows[0].id;
+await db.query("insert into admin_resources(resource,data) values('llm-responses',jsonb_build_object('request_id',$1::text,'response','saved'))",[old]);
+await db.exec(readFileSync(new URL('../sql/generation-context.sql',import.meta.url),'utf8'));
+const historical=(await db.query('select data from admin_resources where id=$1',[old])).rows[0].data;
+assert.equal(historical.generation_context.association_method,'exact_saved_response');
+await db.exec('reset role');
+await db.exec(`insert into itinerary_versions values('33333333-3333-4333-8333-333333333333',9007199254740993,2,'ai_initial','${user}','saved');`);
+const ambiguous=(await as(user,begin)).rows[0].result;
+await as(user,'select finish_observed_generation($1,$2,null)',[ambiguous.id,'saved']);
+await db.exec('reset role');await db.exec(readFileSync(new URL('../sql/generation-context.sql',import.meta.url),'utf8'));
+assert.equal((await db.query('select data from admin_resources where id=$1',[ambiguous.id])).rows[0].data.generation_context,undefined);
+console.log('PASS generation context: owner isolation, version/scope validation, immutable snapshots, exact bigint IDs, response propagation and exact historical association. No model calls.');await db.close();
