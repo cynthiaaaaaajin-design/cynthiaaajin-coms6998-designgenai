@@ -22,6 +22,7 @@ import type { CSSProperties } from 'react';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { Header } from '@/components/header';
+import {ItineraryProvenance} from '@/components/itinerary-provenance';
 import { GenerateItineraryForm } from '@/components/generate-itinerary-form';
 import { ActivityFeedback } from '@/components/activity-feedback';
 import { ItineraryWorkspace } from '@/components/itinerary-workspace';
@@ -219,6 +220,7 @@ export default async function TripDetail({ params, searchParams }: {
                 {isOwner && ['ai_initial', 'ai_revision'].includes(version.source) && <RepairItineraryButton key={version.id} tripId={tripId} versionId={version.id} />}
               </div>
             ) : <ItineraryWorkspace tripId={tripId} versionId={version.id} items={items} days={generationIssue ? 0 : tripDayCount(trip.start_date, trip.end_date)} isOwner={isOwner} isCurrent={isCurrent} proposals={proposals} people={preferencePeople} changed={preferenceChanges} loadError={editingError || !!generationIssue}>
+              <ItineraryProvenance tripId={tripId} versionId={version.id}/>
               {days.map(day => (
               <section key={`${version.id}:${day}`} className="itinerary-version itinerary-day mt-8" aria-labelledby={`day-${day}`}>
                 <h3 id={`day-${day}`} tabIndex={-1} className="day-label mb-4 text-lg font-semibold">DAY {String(day).padStart(2, '0')}</h3>

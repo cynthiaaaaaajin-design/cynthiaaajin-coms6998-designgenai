@@ -15,7 +15,7 @@ function load(path, dependencies = {}, globals = {}) {
       if (!(name in dependencies)) throw new Error(`Unexpected dependency ${name}`);
       return dependencies[name];
     },
-    Response, Request, URL, console, ...globals,
+    Response, Request, URL, console, performance, ...globals,
   });
   return loaded.exports;
 }
@@ -64,6 +64,7 @@ async function scenario(options = {}) {
     },
   };
   const { POST } = load('../app/api/trips/[tripId]/generate/route.ts', {
+    '@/lib/published-chain':{chainGateway:async(action,data)=>{calls.push({operation:'gateway',action,data});if(options.gatewayError)throw Error('Persistence failed');return {}; }},
     '@/lib/collaboration': load('../lib/collaboration.ts'),
     '@/lib/itinerary-editing-server': { preferenceSnapshot: async () => { if (options.preferencesError) throw new Error('Unavailable'); return { participants: ['owner', 'member'], preferences: options.group ?? [] }; } },
     '@/lib/supabase/server': { createClient: async () => client },
@@ -74,7 +75,7 @@ async function scenario(options = {}) {
       if (options.invalidOutput) captureResponse(options.invalidOutput);
       generatedPrompt = prompt;
       if (options.geminiError || options.invalidOutput) throw new Error('Gemini unavailable');
-      return { responseText: validResponse, activities: [activity] };
+      return { responseText: validResponse, activities: [activity],integrationRunId:options.publishedRun?'published-run':null };
     } },
   });
   const response = await POST(new Request('http://localhost/api/trips/9223372036854775807/generate', {
@@ -173,6 +174,9 @@ let providerText = validResponse;
 let finishReason = 'STOP';
 const stages = [];
 const gemini = load('../lib/gemini.ts', {
+  './published-chain':{publishedChainsEnabled:()=>false},
+  './generation-observability':{beginGeneration:async(_kind,prompt)=>({id:null,prompt,model:'gemini-3.8-flash'}),finishGeneration:async()=>{}},
+  './generation-metrics':load('../lib/generation-metrics.ts'),
   'server-only': {},
   '@google/genai': { GoogleGenAI: class {
     models = { generateContent: async request => {
@@ -252,3 +256,6 @@ const unreadablePreferences = await scenario({ preferencesError: true });
 assert.equal(unreadablePreferences.response.status, 500);
 assert.ok(!unreadablePreferences.calls.some(c => c.operation === 'insert'));
 console.log('Group generation checks passed: available, missing, empty, and failed preference reads.');
+
+for(const gatewayError of [false,true]){const r=await scenario({publishedRun:true,gatewayError});assert.equal(r.response.status,gatewayError?500:201);assert(r.calls.some(c=>c.action==='finish'));assert(!r.calls.some(c=>c.table==='itinerary_items'&&c.operation==='insert'),'Published completion uses the atomic gateway, not a second item insert');if(gatewayError)assert(r.calls.some(c=>c.action==='fail'));}
+console.log('PASS published itinerary route: atomic gateway completion, no duplicate item writes, persistence failure is not success. Adapters mocked.');

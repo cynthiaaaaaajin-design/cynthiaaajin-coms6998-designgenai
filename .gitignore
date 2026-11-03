@@ -44,3 +44,6 @@ next-env.d.ts
 /public/media/6399-191636228.mp4
 /public/media/160767-822213540.mp4
 /public/media/45569-443244046_medium.mp4
+
+# Local integration provisioning; never commit environment-specific setup.
+*.local.sql

@@ -4,9 +4,10 @@ import { createClient } from '@/lib/supabase/server';
 import { buildPrompt, parsePreferences, tripDayCount, validTripId } from '@/lib/itinerary';
 import { generateItinerary } from '@/lib/gemini';
 import { geminiErrorDetails, logGeminiError } from '@/lib/gemini-errors';
+import {chainGateway} from '@/lib/published-chain';
 
 export const runtime = 'nodejs';
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 function json(body: object, status = 200) {
   return Response.json(body, { status, headers: { 'Cache-Control': 'private, no-store' } });
@@ -83,6 +84,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ tri
   } catch (error) {
     failed = true;
     generationError = error;
+  }
+  if(generated?.integrationRunId) {
+    try {
+      await chainGateway('finish',{id:generated.integrationRunId});
+      return json({versionId:version.id},201);
+    } catch {
+      await chainGateway('fail',{id:generated.integrationRunId,error:'Itinerary persistence failed; no successful itinerary was saved.'}).catch(()=>{});
+      return json({error:'The generated itinerary could not be saved. Refresh and retry recovery; no incomplete itinerary was marked successful.'},500);
+    }
   }
   const responseText = failed
     ? JSON.stringify({ response_text: rawResponse ?? null,

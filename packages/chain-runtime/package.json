@@ -1,0 +1,1 @@
+{"name":"@tripsync/chain-runtime","version":"1.0.1","type":"module","main":"index.js","types":"index.d.ts","exports":{".":{"types":"./index.d.ts","default":"./index.js"},"./prompt":{"types":"./prompt.d.ts","default":"./prompt.js"}},"files":["index.js","index.d.ts","prompt.js","prompt.d.ts"],"peerDependencies":{"@google/genai":"^2.27.0"}}

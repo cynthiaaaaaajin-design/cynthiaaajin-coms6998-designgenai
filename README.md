@@ -1,5 +1,13 @@
 # TripSync
 
+## Published AI workflows
+
+TripSync can execute the immutable workflow version explicitly tested and published in the separate Chain Studio app. See [the architecture and verification record](docs/ecosystem-integration.md). The approved additive schema is `sql/studio-integration.sql`; apply one copy only after the existing Phase 3, Week 6 and Chain Studio migrations. Never reset the database.
+
+Configure a random server-only `TRIPSYNC_CHAIN_SECRET` and store only its SHA-256 hash in `studio_integration_config`. Enable the new path with `TRIPSYNC_STUDIO_ENABLED=true` after publishing a successful test. An enabled workflow fails clearly when unavailable; it never silently uses legacy prompts. Without the flag, the existing legacy generation remains available and is labeled as unlinked to Studio. No service-role key is used.
+
+The canonical shared executor source lives in `packages/chain-runtime`; both Public and Studio install the byte-identical versioned archive in `vendor`. Itinerary validation and the existing revision preview/apply contract remain in place. Completed itinerary versions support a separate overall 1–5 rating; existing activity votes retain their meaning. Admin's `/generations` page links the real itinerary, exact publication and feedback.
+
 Plan trips together, without the group chat chaos.
 
 Next.js App Router + Tailwind CSS + Supabase Google OAuth. The homepage, profile/settings page, and protected `/trips` dashboard are implemented. The dashboard shows owned and privately shared trips from Supabase. Trip detail pages support owner-only Gemini itinerary generation and revision, version history, authenticated Like/Dislike/comment feedback, and owner-managed travelers through `trip_members`. Sharing depends on the existing RLS permissions described below. Only the homepage preview uses a labeled sample trip. Authenticated users can create private trips at `/trips/new`; manual itinerary editing is not implemented.

@@ -7,8 +7,9 @@ import { loadVoteRows } from '@/lib/feedback-server';
 import { loadChangeRequests } from '@/lib/collaboration-server';
 import { buildProposalPrompt } from '@/lib/proposal-prompt';
 import { generateItineraryProposal } from '@/lib/gemini';
+import {chainGateway} from '@/lib/published-chain';
 export const runtime='nodejs';
-export const maxDuration=120;
+export const maxDuration=300;
 export async function POST(request: Request,{params}:{params:Promise<{tripId:string}>}) {
   try {
     const {tripId}=await params;
@@ -33,9 +34,18 @@ export async function POST(request: Request,{params}:{params:Promise<{tripId:str
     const [votes,requests]=await Promise.all([loadVoteRows(access.client,items.map(i=>i.id)),loadChangeRequests(access.client,tripId,version.id)]);
     const trip={destination:access.trip.destination,start_date:access.trip.start_date,end_date:access.trip.end_date};
     const prompt=buildProposalPrompt({...input,trip,days,items,preferences,votes,requests});
-    let response: string;
-    try {response=await generateItineraryProposal(prompt,{tripId,versionId:input.base,operation:'revision',scope:input.scope,day:input.day,itemId:input.itemId});parseProposal(response,days,input.scope,input.day);}
+    let response: string;let integrationRunId:string|undefined;
+    try {response=await generateItineraryProposal(prompt,{tripId,versionId:input.base,operation:'revision',scope:input.scope,day:input.day,itemId:input.itemId},days,id=>{integrationRunId=id;});parseProposal(response,days,input.scope,input.day);}
     catch {return json({error:'AI could not produce a valid proposal. The current itinerary is unchanged. Please try again.'},502);}
+    if(integrationRunId) {
+      try {
+        const saved=await chainGateway('proposal',{id:integrationRunId,scope:input.scope,day:input.day,item_id:input.itemId,instruction:input.instruction,snapshot:preferences,trip_context:trip});
+        return json({proposalId:saved.proposal_id},201);
+      } catch {
+        await chainGateway('fail',{id:integrationRunId,error:'Proposal persistence failed.'}).catch(()=>{});
+        return json({error:'The proposal could not be saved. The current itinerary is unchanged.'},409);
+      }
+    }
     const result=await access.client.rpc('save_itinerary_proposal',{
       p_trip_id:tripId,p_base_version_id:input.base,p_scope:input.scope,p_target_day:input.day,p_target_item_id:input.itemId,
       p_instruction:input.instruction,p_prompt:prompt,p_response:response,p_snapshot:preferences,p_trip_context:trip,

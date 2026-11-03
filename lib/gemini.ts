@@ -6,6 +6,7 @@ import type { GenerateContentResponse } from '@google/genai';
 import { GoogleGenAI } from '@google/genai';
 import { parseActivities } from './itinerary';
 import { logGeminiError } from './gemini-errors';
+import {publishedChainsEnabled,runPublishedChain} from './published-chain';
 
 const responseJsonSchema = {
   type: 'object',
@@ -34,6 +35,11 @@ const responseJsonSchema = {
 };
 
 export async function generateItinerary(prompt: string, days: number, captureResponse?: (text: string) => void, logErrors = true, context?: GenerationContext) {
+  if(publishedChainsEnabled()) {
+    const run=await runPublishedChain(prompt,days,context);
+    captureResponse?.(run.text);
+    return {responseText:run.text,activities:parseActivities(run.text,days),integrationRunId:run.id};
+  }
   let stage = 'Gemini configuration';
   let observed: Awaited<ReturnType<typeof beginGeneration>> | undefined;
   let rawResponse = '';
@@ -81,7 +87,7 @@ export async function generateItinerary(prompt: string, days: number, captureRes
     const responseText = response.text;
     const activities = parseActivities(responseText, days);
     await finishGeneration(observed.id, rawResponse, false, buildGenerationMetrics(observed.model, performance.now() - startedAt, responseMetadata));
-    return { responseText, activities };
+    return { responseText, activities, integrationRunId:null as string|null };
   } catch (error) {
     if (observed) await finishGeneration(observed.id, rawResponse, true, buildGenerationMetrics(observed.model, performance.now() - startedAt, responseMetadata));
     if (logErrors) await logGeminiError(error, stage);
@@ -91,7 +97,12 @@ export async function generateItinerary(prompt: string, days: number, captureRes
 }
 
 // Proposal generation does not create a published version. Callers persist only validated previews.
-export async function generateItineraryProposal(prompt: string, context?: GenerationContext) {
+export async function generateItineraryProposal(prompt: string, context?: GenerationContext, days=30, captureRun?: (id:string)=>void) {
+  if(publishedChainsEnabled()) {
+    const run=await runPublishedChain(prompt,days,context,true);
+    captureRun?.(run.id);
+    return run.text;
+  }
   const apiKey=process.env.GEMINI_API_KEY;
   if(!apiKey) throw new Error('Gemini is not configured.');
   const proposalSchema={

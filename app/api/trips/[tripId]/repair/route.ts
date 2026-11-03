@@ -1,9 +1,10 @@
 import { createClient } from '@/lib/supabase/server';
 import { parseActivities, tripDayCount, validTripId } from '@/lib/itinerary';
 import { generateItinerary } from '@/lib/gemini';
+import {chainGateway} from '@/lib/published-chain';
 
 export const runtime = 'nodejs';
-export const maxDuration = 120;
+export const maxDuration = 300;
 const failure = "We couldn't restore this itinerary. Please try again.";
 function json(body: object, status = 200) {
   return Response.json(body, { status, headers: { 'Cache-Control': 'private, no-store' } });
@@ -64,6 +65,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ tri
       if (!version.prompt_text?.trim()) throw new Error('No saved prompt');
       stage = 'generate from saved prompt';
       const generated = await generateItinerary(version.prompt_text, days, undefined, false, {tripId,versionId:version.id,operation:'repair',scope:'trip'});
+      if(generated.integrationRunId) {
+        try {await chainGateway('finish',{id:generated.integrationRunId});}
+        catch(error){await chainGateway('fail',{id:generated.integrationRunId,error:'Recovery persistence failed.'}).catch(()=>{});throw error;}
+        return json({versionId:version.id,method},201);
+      }
       activities = generated.activities;
       regeneratedResponse = generated.responseText;
     }

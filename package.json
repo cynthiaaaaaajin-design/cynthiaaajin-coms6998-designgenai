@@ -14,12 +14,14 @@
     "test:community": "node scripts/verify-community-imports.mjs && node scripts/verify-community-imports-db.mjs",
     "test:photos": "node scripts/verify-traveler-photos.mjs",
     "test:prompt-context": "node scripts/verify-prompt-context.mjs",
-    "test:metrics": "node scripts/verify-generation-metrics.mjs && node scripts/verify-generation-metrics-db.mjs"
+    "test:metrics": "node scripts/verify-generation-metrics.mjs && node scripts/verify-generation-metrics-db.mjs",
+    "test:studio": "node scripts/verify-studio-integration.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.27.0",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.117.2",
+    "@tripsync/chain-runtime": "file:vendor/tripsync-chain-runtime-1.0.1.tgz",
     "next": "16.3.5",
     "react": "19.2.8",
     "react-dom": "19.2.8",

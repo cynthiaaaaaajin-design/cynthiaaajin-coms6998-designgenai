@@ -39,6 +39,7 @@ const common=load('../lib/collaboration-route.ts',{'@/lib/supabase/server':{crea
 const deps={'@/lib/collaboration-route':common,'@/lib/collaboration':collaboration,'@/lib/itinerary':itinerary,'@/lib/itinerary-editing':editing};
 const manual=load('../app/api/trips/[tripId]/edit/route.ts',deps);
 const proposal=load('../app/api/trips/[tripId]/proposals/route.ts',{...deps,
+ '@/lib/published-chain':{chainGateway:async()=>{throw Error('Unexpected published call in legacy regression');}},
  '@/lib/itinerary-editing-server':{currentEditingContext:async()=>({version:{id:state.current},items}),preferenceSnapshot:async()=>snapshot},
  '@/lib/feedback-server':{loadVoteRows:async()=>[{id:'1',item_id:item,user_id:member,value:-1,comment:'Too tiring'}]},
  '@/lib/collaboration-server':{loadChangeRequests:async()=>[{item_id:item,created_by:member,status:'pending',request_type:'replacement',suggested_replacement:'Park',comment:'Flat paths'}]},

@@ -25,7 +25,7 @@ async function run(o={}) {
    counts++;return {count:o.countError?null:o.healthy?1:o.raced&&counts===2?1:0,error:o.countError?{code:'42501'}:null};
   }return chain;
  }};
- const route=load('app/api/trips/[tripId]/repair/route.ts',{'@/lib/supabase/server':{createClient:async()=>client},'@/lib/itinerary':itinerary,'@/lib/gemini':{generateItinerary:async(...args)=>{generations.push(args);if(o.geminiError)throw new Error('PRIVATE_RESPONSE');return {activities:[activity],responseText:raw};}}},{console:{info:(...args)=>logs.push(args)}});
+ const route=load('app/api/trips/[tripId]/repair/route.ts',{'@/lib/published-chain':{chainGateway:async()=>{throw Error('Unexpected gateway call');}},'@/lib/supabase/server':{createClient:async()=>client},'@/lib/itinerary':itinerary,'@/lib/gemini':{generateItinerary:async(...args)=>{generations.push(args);if(o.geminiError)throw new Error('PRIVATE_RESPONSE');return {activities:[activity],responseText:raw};}}},{console:{info:(...args)=>logs.push(args)}});
  const response=await route.POST(new Request('http://localhost/api/trips/3/repair',{method:'POST',headers:{origin:o.crossOrigin?'https://evil.test':'http://localhost'},body:JSON.stringify({versionId,user_id:'forged'})}),{params:Promise.resolve({tripId:'3'})});
  assert.ok(!JSON.stringify(logs).includes('PRIVATE_'));
  return {status:response.status,body:await response.json(),calls,generations};

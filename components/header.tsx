@@ -1,14 +1,17 @@
 import { ArrowIcon } from "@/components/arrow-icon";
 import Link from "next/link";
 import { AuthButton } from "./auth-buttons";
+import {createClient} from '@/lib/supabase/server';
 
-export function Header({
+export async function Header({
   signedIn = false,
   active,
 }: {
   signedIn?: boolean;
   active?: "trips" | "profile" | "community";
 }) {
+  let isAdmin=false;
+  if(signedIn){const client=await createClient();const {data}=await client.rpc('is_superadmin');isAdmin=data===true;}
   return (
     <header className="site-header">
       <Link href="/?welcome=1" className="brand" aria-label="TripSync home">
@@ -37,6 +40,7 @@ export function Header({
               Profile
             </Link>
             <AuthButton logout />
+            {isAdmin&&<a href={process.env.NEXT_PUBLIC_ADMIN_URL||'https://trypsync-admin.vercel.app'} title="Manage trips, generations and feedback">Admin ↗</a>}
           </>
         ) : (
           <Link href="/#how-it-works" className="text-sm">
