@@ -20,10 +20,14 @@ export function AuthButton({ logout = false, next }: { logout?: boolean; next?: 
         router.replace("/");
         router.refresh();
       } else {
+        const destination=await fetch('/api/auth/destination',{
+          method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({next:tripDestination(next)}),
+        });
+        if(!destination.ok)throw new Error('Could not preserve the login destination.');
         const { error } = await supabase.auth.signInWithOAuth({
           provider: "google",
           options: {
-            redirectTo: `${window.location.origin}/auth/callback${tripDestination(next) ? `?next=${encodeURIComponent(tripDestination(next)!)}` : ""}`,
+            redirectTo: `${window.location.origin}/auth/callback`,
             queryParams: { prompt: "select_account" },
           },
         });
