@@ -33,7 +33,7 @@ export function GenerateItineraryForm({ tripId, submitted = 0, total = 0, prefer
   }
 
   return (
-    <div className="mt-6 border-t border-slate-200 pt-5" aria-label="Generate itinerary with AI">
+    <div className="trip-generate-panel mt-6 border-t border-slate-200 pt-5" aria-label="Generate itinerary with AI">
       <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500">
         AI will use your group’s saved preferences to create a day-by-day plan.
       </p>
@@ -65,7 +65,7 @@ export function GenerateItineraryForm({ tripId, submitted = 0, total = 0, prefer
         <div aria-live="polite" className="mt-4 text-sm">
           {busy && <PlanningStatus />}
           {saved && <p className="motion-success text-teal-800" role="status">✓ Your itinerary is saved. Loading your plan…</p>}
-          {error && <p role="alert" className="text-red-700">{error}</p>}
+          {error && <div className="generation-recovery" role="alert"><p>{error}</p><p>Your saved plans are unchanged. Review your input and use Generate again to retry.</p></div>}
         </div>
       </form>
     </div>

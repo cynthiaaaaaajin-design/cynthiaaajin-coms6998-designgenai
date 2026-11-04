@@ -11,7 +11,7 @@ export function ItineraryVersionSelector({ tripId, versions, selectedId }: {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   return (
-    <div className="mt-5" aria-busy={pending}>
+    <div className="itinerary-version-picker mt-5" aria-busy={pending}>
       <label htmlFor="itinerary-version">View itinerary version</label>
       <select id="itinerary-version" className="ml-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm" value={selectedId} disabled={pending}
         onChange={event => {

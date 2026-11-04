@@ -1,0 +1,17 @@
+[
+  {
+    "root": "/Users/cynthiajyx/IdeaProjects/cynthiaaajin-coms6998-designgenai",
+    "base": "c6c770f78adec55253e4aa2421f06975ddd5d5a7",
+    "status": " M docs/ecosystem-deployments.json\n M docs/ecosystem-handoff.md\n?? docs/access-notifications-implementation.md\n?? docs/access-notifications-live-test.md\n?? docs/admin-form-spacing-verification.md\n?? docs/admin-live-verification-2026-10-29.md\n?? docs/boston-autumn-weekend.md\n?? docs/ecosystem-ordinary-account-test.md\n?? docs/week7-admin-verification-2026-10-28.md\n?? docs/week7-live-rollback-verification.sql\n?? sql/studio-access-notifications.sql\n"
+  },
+  {
+    "root": "/Users/cynthiajyx/IdeaProjects/trypsync-admin",
+    "base": "2c58ceef54801cab61e8eadad1971604bcceb16a",
+    "status": ""
+  },
+  {
+    "root": "/Users/cynthiajyx/IdeaProjects/tripsync-chain-studio",
+    "base": "7a764c278b01b1c04815066569db8bbfaa986e8a",
+    "status": ""
+  }
+]
