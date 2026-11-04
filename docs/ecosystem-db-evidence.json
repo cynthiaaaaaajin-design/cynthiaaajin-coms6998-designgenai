@@ -1,0 +1,92 @@
+{
+  "source": "Read-only Supabase SQL Editor query, TripSync gzlzlofrngnqlbcngndf, November 3 2026; values observed directly in the result cell",
+  "trip_id": "21",
+  "title": "[E2E 2026-11-03] Kyoto workflow validation",
+  "test_owner_is_superadmin": true,
+  "chain_id": "38569d3f-5e3d-443a-a1d8-f6d9dc99efa9",
+  "active_publication_id": "6766c8f3-8a2f-4cb6-9da7-498a32fcef09",
+  "versions": [
+    {
+      "itinerary_version_id": "2f6b17f8-ecd5-4223-9d3b-3927b08097cc",
+      "number": 1,
+      "run_id": "3cd95405-c8e6-4274-b861-740d92c8e5dd",
+      "publication_id": "34edd607-55e5-44b9-9a45-f221a714868b",
+      "chain_version": 1,
+      "status": "completed",
+      "item_count": 9,
+      "outputs_saved": 3,
+      "models": [
+        {
+          "step": 1,
+          "model": "gemini-3.8-flash",
+          "duration_ms": 11065
+        },
+        {
+          "step": 2,
+          "model": "gemini-3.8-flash",
+          "duration_ms": 16055
+        },
+        {
+          "step": 3,
+          "model": "gemini-3.8-flash",
+          "duration_ms": 9357
+        }
+      ]
+    },
+    {
+      "itinerary_version_id": "bdb96573-9316-4807-b602-65066fc60359",
+      "number": 2,
+      "run_id": "2e9482ba-758a-4db0-875c-f768b505cd7b",
+      "publication_id": "6766c8f3-8a2f-4cb6-9da7-498a32fcef09",
+      "chain_version": 2,
+      "status": "completed",
+      "item_count": 9,
+      "outputs_saved": 3,
+      "models": [
+        {
+          "step": 1,
+          "model": "gemini-3.8-flash",
+          "duration_ms": 9216
+        },
+        {
+          "step": 2,
+          "model": "gemini-3.8-flash",
+          "duration_ms": 15752
+        },
+        {
+          "step": 3,
+          "model": "gemini-3.8-flash",
+          "duration_ms": 11384
+        }
+      ]
+    }
+  ],
+  "feedback": [
+    {
+      "version_id": "2f6b17f8-ecd5-4223-9d3b-3927b08097cc",
+      "rating": 4,
+      "comment": "E2E test feedback: clear three-day structure; verify venue hours before travel.",
+      "updated_at": "2026-11-03T19:12:35.515034-05:00"
+    }
+  ],
+  "activity_votes": 1,
+  "published_tests": [
+    {
+      "publication_id": "34edd607-55e5-44b9-9a45-f221a714868b",
+      "chain_version": 1,
+      "draft_revision": 3,
+      "test_run_id": "3e92f35d-8581-4a7f-8410-be5f21cfe0c8",
+      "status": "completed",
+      "outputs_saved": 3
+    },
+    {
+      "publication_id": "6766c8f3-8a2f-4cb6-9da7-498a32fcef09",
+      "chain_version": 2,
+      "draft_revision": 5,
+      "test_run_id": "d95605a2-e996-428b-915c-540313d66f50",
+      "status": "completed",
+      "outputs_saved": 3
+    }
+  ],
+  "snapshot_note": "Historical Kyoto baseline snapshot before the additional Paris/New York tests. Its active v2 value is not current; see ecosystem-additional-db-evidence.json for active v4."
+}

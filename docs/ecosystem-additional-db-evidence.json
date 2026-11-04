@@ -1,0 +1,51 @@
+{
+  "source": "Transcribed from the visible result of the read-only Supabase SQL Editor query in ecosystem-additional-verify.sql, November 3 2026, America/New_York",
+  "project": "gzlzlofrngnqlbcngndf",
+  "active_publication_id": "63c84987-7541-443f-84e7-ec44f5776031",
+  "trips": [
+    {"id":"22","title":"[E2E Round 2] Paris vegetarian two-day","destination":"Paris, France","start_date":"2026-11-14","end_date":"2026-11-15"},
+    {"id":"23","title":"[E2E Round 3] New York free-attractions day","destination":"New York City, USA","start_date":"2026-11-20","end_date":"2026-11-20"}
+  ],
+  "public_runs": [
+    {
+      "run_id":"a1ab4872-3f19-4164-a2ce-852f8914290c","trip_id":"22","operation":"initial","status":"completed","error":null,
+      "base_version_id":"049557cb-0bbe-4b5b-8b18-02b46ce43e08","itinerary_version_id":"049557cb-0bbe-4b5b-8b18-02b46ce43e08","itinerary_version":1,"proposal_id":null,
+      "publication_id":"6766c8f3-8a2f-4cb6-9da7-498a32fcef09","chain_version":2,"saved_steps":3,"item_count":6,"response_matches_final_step":true,"elapsed_ms":35012,
+      "models":[{"step":1,"model":"gemini-3.8-flash","duration_ms":12200},{"step":2,"model":"gemini-3.8-flash","duration_ms":12655},{"step":3,"model":"gemini-3.8-flash","duration_ms":9633}]
+    },
+    {
+      "run_id":"3f922aa8-0a51-438d-8bf2-93b356ed335d","trip_id":"22","operation":"revision","status":"completed","error":null,
+      "base_version_id":"049557cb-0bbe-4b5b-8b18-02b46ce43e08","itinerary_version_id":"1d5839c0-2ec1-4dd9-8ab2-56563853b55e","itinerary_version":2,"proposal_id":"c54edb3b-9b0b-4307-846a-3ddd1d72efe2",
+      "publication_id":"6835a7d5-3de4-4ffa-8586-95cb1401508f","chain_version":3,"saved_steps":3,"item_count":6,"response_matches_final_step":true,"elapsed_ms":45928,
+      "models":[{"step":1,"model":"gemini-3.8-flash","duration_ms":7762},{"step":2,"model":"gemini-3.8-flash","duration_ms":16703},{"step":3,"model":"gemini-3.8-flash","duration_ms":21101}]
+    },
+    {
+      "run_id":"ebf2d82c-488c-4219-bdcb-f8e9f75c5421","trip_id":"23","operation":"initial","status":"completed","error":null,
+      "base_version_id":"c2422d3b-b78d-41d0-8af9-a7fec1bac17e","itinerary_version_id":"c2422d3b-b78d-41d0-8af9-a7fec1bac17e","itinerary_version":1,"proposal_id":null,
+      "publication_id":"6835a7d5-3de4-4ffa-8586-95cb1401508f","chain_version":3,"saved_steps":3,"item_count":4,"response_matches_final_step":true,"elapsed_ms":34200,
+      "models":[{"step":1,"model":"gemini-3.8-flash","duration_ms":14749},{"step":2,"model":"gemini-3.8-flash","duration_ms":11273},{"step":3,"model":"gemini-3.8-flash","duration_ms":7872}]
+    },
+    {
+      "run_id":"56503df9-1fc2-4c90-adae-a75f0056f7a8","trip_id":"23","operation":"revision","status":"failed","error":"AI generation or validation failed.",
+      "base_version_id":"c2422d3b-b78d-41d0-8af9-a7fec1bac17e","itinerary_version_id":null,"itinerary_version":null,"proposal_id":null,
+      "publication_id":"63c84987-7541-443f-84e7-ec44f5776031","chain_version":4,"saved_steps":0,"item_count":0,"response_matches_final_step":null,"elapsed_ms":28948,"models":null
+    },
+    {
+      "run_id":"505c5fc6-0170-4616-94b4-07da547645cc","trip_id":"23","operation":"revision","status":"completed","error":null,
+      "base_version_id":"c2422d3b-b78d-41d0-8af9-a7fec1bac17e","itinerary_version_id":"32155445-c124-4b13-969e-41f4af6ac22c","itinerary_version":2,"proposal_id":"c50b08ad-e1c4-4149-b013-32920e4d2fed",
+      "publication_id":"63c84987-7541-443f-84e7-ec44f5776031","chain_version":4,"saved_steps":3,"item_count":4,"response_matches_final_step":true,"elapsed_ms":27422,
+      "models":[{"step":1,"model":"gemini-3.8-flash","duration_ms":11786},{"step":2,"model":"gemini-3.8-flash","duration_ms":8644},{"step":3,"model":"gemini-3.8-flash","duration_ms":6500}]
+    }
+  ],
+  "feedback": [
+    {"trip_id":"22","version_id":"049557cb-0bbe-4b5b-8b18-02b46ce43e08","rating":5,"comment":"Round 2 E2E feedback: two days rendered; vegetarian meals and no museum-entry activities in this test plan."},
+    {"trip_id":"22","version_id":"1d5839c0-2ec1-4dd9-8ab2-56563853b55e","rating":4,"comment":"Round 2 E2E revised-version feedback: vegetarian choices, no museum entry, relaxed pace and explicit uncertainty wording preserved."},
+    {"trip_id":"23","version_id":"c2422d3b-b78d-41d0-8af9-a7fec1bac17e","rating":4,"comment":"Round 3 E2E initial feedback: one day of free outdoor attractions, no alcohol-focused activities and all starts before 20:00."},
+    {"trip_id":"23","version_id":"32155445-c124-4b13-969e-41f4af6ac22c","rating":5,"comment":"Round 3 E2E revised-version feedback: free outdoor attractions, original USD budget context and before-20:00 schedule preserved. This is test feedback, not a satisfaction survey."}
+  ],
+  "studio_tests": [
+    {"publication_id":"6835a7d5-3de4-4ffa-8586-95cb1401508f","chain_version":3,"draft_revision":8,"test_run_id":"6fcf9708-2a95-4e60-937a-ef6aa7f90850","status":"completed","saved_steps":3},
+    {"publication_id":"63c84987-7541-443f-84e7-ec44f5776031","chain_version":4,"draft_revision":11,"test_run_id":"b499c1e7-920c-4f85-a63a-f49fb5f10c74","status":"completed","saved_steps":3}
+  ],
+  "version_counts":{"22":2,"23":2}
+}

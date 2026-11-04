@@ -1,0 +1,66 @@
+[
+  {
+    "test": "Public home",
+    "requested_url": "https://cynthiaaajin-coms6998-designgenai-cm1iyh8k2.vercel.app/",
+    "final_url": "https://cynthiaaajin-coms6998-designgenai-cm1iyh8k2.vercel.app/",
+    "status": 200,
+    "expected_status": 200,
+    "result": "PASS"
+  },
+  {
+    "test": "Public generation rejects anonymous",
+    "requested_url": "https://cynthiaaajin-coms6998-designgenai-cm1iyh8k2.vercel.app/api/trips/21/generate",
+    "final_url": "https://cynthiaaajin-coms6998-designgenai-cm1iyh8k2.vercel.app/api/trips/21/generate",
+    "status": 401,
+    "expected_status": 401,
+    "result": "PASS"
+  },
+  {
+    "test": "Public feedback rejects anonymous",
+    "requested_url": "https://cynthiaaajin-coms6998-designgenai-cm1iyh8k2.vercel.app/api/trips/21/feedback",
+    "final_url": "https://cynthiaaajin-coms6998-designgenai-cm1iyh8k2.vercel.app/api/trips/21/feedback",
+    "status": 401,
+    "expected_status": 401,
+    "result": "PASS"
+  },
+  {
+    "test": "Admin protected generation view",
+    "requested_url": "https://trypsync-admin-pqtanifhc-cynthia-coms6998-designgenai.vercel.app/generations",
+    "final_url": "https://trypsync-admin-pqtanifhc-cynthia-coms6998-designgenai.vercel.app/login",
+    "status": 200,
+    "expected_status": 200,
+    "result": "PASS"
+  },
+  {
+    "test": "Studio chain mutation rejects anonymous",
+    "requested_url": "https://tripsync-chain-studio-uakxl03yh-cynthia-coms6998-designgenai.vercel.app/api/chains",
+    "final_url": "https://tripsync-chain-studio-uakxl03yh-cynthia-coms6998-designgenai.vercel.app/api/chains",
+    "status": 403,
+    "expected_status": 403,
+    "result": "PASS"
+  },
+  {
+    "test": "Studio run rejects anonymous",
+    "requested_url": "https://tripsync-chain-studio-uakxl03yh-cynthia-coms6998-designgenai.vercel.app/api/run",
+    "final_url": "https://tripsync-chain-studio-uakxl03yh-cynthia-coms6998-designgenai.vercel.app/api/run",
+    "status": 403,
+    "expected_status": 403,
+    "result": "PASS"
+  },
+  {
+    "test": "Studio publication rejects anonymous",
+    "requested_url": "https://tripsync-chain-studio-uakxl03yh-cynthia-coms6998-designgenai.vercel.app/api/publish",
+    "final_url": "https://tripsync-chain-studio-uakxl03yh-cynthia-coms6998-designgenai.vercel.app/api/publish",
+    "status": 403,
+    "expected_status": 403,
+    "result": "PASS"
+  },
+  {
+    "test": "Studio historical prompts require login",
+    "requested_url": "https://tripsync-chain-studio-uakxl03yh-cynthia-coms6998-designgenai.vercel.app/versions/34edd607-55e5-44b9-9a45-f221a714868b",
+    "final_url": "https://tripsync-chain-studio-uakxl03yh-cynthia-coms6998-designgenai.vercel.app/login",
+    "status": 200,
+    "expected_status": 200,
+    "result": "PASS"
+  }
+]

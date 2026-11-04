@@ -1,0 +1,36 @@
+{
+  "url": "https://cynthiaaajin-coms6998-designgenai-fmjegxtsr.vercel.app",
+  "checks": [
+    {
+      "test": "Safe same-origin return destination",
+      "status": 200,
+      "pass": true
+    },
+    {
+      "test": "Cross-origin return cookie rejected",
+      "status": 403,
+      "pass": true
+    },
+    {
+      "test": "External return destination rejected",
+      "status": 400,
+      "pass": true
+    },
+    {
+      "test": "Failed OAuth preserves intended trip and consumes cookie",
+      "status": 307,
+      "location": "https://cynthiaaajin-coms6998-designgenai-fmjegxtsr.vercel.app/?auth_error=1&next=%2Ftrips%2F21",
+      "pass": true
+    },
+    {
+      "test": "Final Public anonymous generate rejection",
+      "status": 401,
+      "pass": true
+    },
+    {
+      "test": "Final Public anonymous feedback rejection",
+      "status": 401,
+      "pass": true
+    }
+  ]
+}

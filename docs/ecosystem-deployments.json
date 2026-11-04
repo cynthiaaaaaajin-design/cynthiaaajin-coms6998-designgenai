@@ -1,0 +1,34 @@
+[
+  {
+    "app": "Public",
+    "deployment_id": "dpl_HY8Bnb7ZjJFF793VUBXvixJoqjDd",
+    "commit": "99874b9ef08a2a74e420b7146bc722d605bd0692",
+    "commit_metadata_field": "gitCommitSha",
+    "url": "https://cynthiaaajin-coms6998-designgenai-fmjegxtsr.vercel.app",
+    "stable_url": "https://cynthiaaajin-coms6998-designgenai.vercel.app",
+    "ready_state": "READY",
+    "clean_release_checkout": true,
+    "git_dirty": null,
+    "previous_generation_test_deployment": "https://cynthiaaajin-coms6998-designgenai-cm1iyh8k2.vercel.app",
+    "previous_generation_test_commit": "574fbbec7ee40f112700961b737ed98ac1d0312d",
+    "release_note": "Final commit changes exact OAuth callback handling only; shared executor and itinerary persistence match the generation-tested commit."
+  },
+  {
+    "app": "Admin",
+    "deployment_id": "dpl_CBdeN7AvFhwq4VUBCPAdGAWkMFVf",
+    "commit": "81ea31b00dd63581b12f8730c9feae8b89e5042a",
+    "url": "https://trypsync-admin-pqtanifhc-cynthia-coms6998-designgenai.vercel.app",
+    "stable_url": "https://trypsync-admin.vercel.app",
+    "ready_state": "READY",
+    "git_dirty": null
+  },
+  {
+    "app": "Studio",
+    "deployment_id": "dpl_5N8zr2wxC5czjYqN7BQRQwY7JEkm",
+    "commit": "b266933f6e673e3edbb884885c1df21d0b49c790",
+    "url": "https://tripsync-chain-studio-uakxl03yh-cynthia-coms6998-designgenai.vercel.app",
+    "stable_url": "https://tripsync-chain-studio.vercel.app",
+    "ready_state": "READY",
+    "git_dirty": null
+  }
+]
