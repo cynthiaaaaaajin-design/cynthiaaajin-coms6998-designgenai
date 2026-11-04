@@ -6,6 +6,7 @@ export type NormalizedDestination = {
 };
 type Place = Omit<NormalizedDestination, 'raw' | 'slug'> & { aliases: string[] };
 const places: Place[] = [
+  { canonical: 'New York City, USA', city: 'New York City', region: 'New York', country: 'USA', theme: 'generic', aliases: ['nyc', 'new york', 'newyork', 'new york city', 'new york ny usa', 'new york usa', '纽约', '紐約'] },
   { canonical: 'Tokyo, Japan', city: 'Tokyo', country: 'Japan', theme: 'asia-city', aliases: ['tokyo', '东京', '東京'] },
   { canonical: 'Lisbon, Portugal', city: 'Lisbon', country: 'Portugal', theme: 'europe-city', aliases: ['lisbon', 'lisboa', '里斯本'] },
   { canonical: 'Miami, Florida, USA', city: 'Miami', region: 'Florida', country: 'USA', theme: 'beach', aliases: ['miami', 'miami fl', 'miami florida', 'miami fl usa', '迈阿密'] },

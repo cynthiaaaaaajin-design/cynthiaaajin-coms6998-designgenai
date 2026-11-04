@@ -18,7 +18,8 @@ const normalizedName = (name: string) => name.normalize('NFKD').replace(/\p{M}/g
 export async function destinationPhoto(destination: string, index: number): Promise<DestinationPhoto | null> {
   const key = process.env.GOOGLE_MAPS_API_KEY || process.env.GOOGLE_PLACES_API_KEY;
   if (!key || !destination.trim() || !Number.isInteger(index) || index < 0 || index > 4) return null;
-  const canonical = normalizeDestination(destination).canonical;
+  const identity = normalizeDestination(destination);
+  const canonical = identity.canonical;
   const headers = { 'X-Goog-Api-Key': key, 'Content-Type': 'application/json' };
   const options = { cache: 'no-store' as const, redirect: 'error' as const, signal: AbortSignal.timeout(12000) };
   try {
@@ -30,15 +31,21 @@ export async function destinationPhoto(destination: string, index: number): Prom
       place = await details.json();
     } else {
       const result = await fetch('https://places.googleapis.com/v1/places:searchText', {
-        ...options, method: 'POST', headers: { ...headers, 'X-Goog-FieldMask': 'places.id,places.displayName,places.photos' },
+        ...options, method: 'POST', headers: { ...headers, 'X-Goog-FieldMask': 'places.id,places.displayName,places.types,places.photos' },
         body: JSON.stringify({ textQuery: canonical, pageSize: 3, languageCode: 'en' }),
       });
       if (!result.ok) return null;
       const data = await result.json();
       // Never substitute a similarly named business for a destination.
       const expected = normalizedName(canonical.split(',')[0]);
-      place = Array.isArray(data.places) ? data.places.find((entry: { displayName?: { text?: string } }) =>
-        typeof entry.displayName?.text === 'string' && normalizedName(entry.displayName.text) === expected) : undefined;
+      place = Array.isArray(data.places) ? data.places.find((entry: { displayName?: { text?: string }; types?: string[] }) => {
+        const name = entry.displayName?.text;
+        if (typeof name !== 'string') return false;
+        if (normalizedName(name) === expected) return true;
+        // Google calls NYC "New York". Accept known city aliases only for an
+        // actual locality, never an unrelated shop or a similarly named place.
+        return !!identity.city && entry.types?.includes('locality') && normalizeDestination(name).canonical === canonical;
+      }) : undefined;
       if (!place || typeof place.id !== 'string' || !/^[\w-]+$/.test(place.id)) return null;
       if (ids.size >= 256) ids.delete(ids.keys().next().value!);
       ids.set(canonical, { id: place.id, expires: Date.now() + 30 * 86400000 });

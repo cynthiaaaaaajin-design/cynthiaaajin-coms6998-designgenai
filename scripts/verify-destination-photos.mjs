@@ -23,7 +23,7 @@ for (const destination of ['Puerto Rico','Lisbon, Portugal','Tokyo, Japan','Miam
   const first=await api.destinationPhoto(destination,0);
   if(!known){assert.equal(first,null);continue;}
   assert.equal(first.count,5);assert.equal(first.authors[0].name,'Photo author');assert.ok(!JSON.stringify(first).includes('private-secret'));
-  assert.equal(calls[0].options.headers['X-Goog-FieldMask'],'places.id,places.displayName,places.photos');
+  assert.equal(calls[0].options.headers['X-Goog-FieldMask'],'places.id,places.displayName,places.types,places.photos');
   assert.ok(await api.destinationPhoto(destination,1));assert.equal(calls.filter(call=>call.url.endsWith('searchText')).length,1);
   assert.ok(calls.some(call=>call.options.headers?.['X-Goog-FieldMask']==='id,displayName,photos'));
   assert.equal(await api.destinationPhoto(destination,5),null);
@@ -37,4 +37,15 @@ for(const mode of ['missing','quota','throw','noPhotos','unsafeMedia']) {
  }});
  assert.equal(await api.destinationPhoto('Lisbon, Portugal',0),null);
 }
-console.log('PASS: four destinations, unknown fallback, five-photo cap, place-ID reuse/fresh metadata, attribution, secret isolation, quota, no photos, missing key and unsafe media. Google responses mocked.');
+for (const types of [['locality','political'],['store'],undefined]) {
+ let mediaCalls=0;
+ const api=load('lib/google-places.ts',{'server-only':{},'./destinations':destinations},{process:{env:{GOOGLE_MAPS_API_KEY:'private-secret'}},fetch:async(url)=>{
+   if(String(url).includes('googleusercontent.com'))return new Response(new Uint8Array([1,2,3]),{headers:{'content-type':'image/jpeg'}});
+   if(String(url).includes('/media?')){mediaCalls++;return Response.json({photoUri:'https://lh3.googleusercontent.com/example'});}
+   return Response.json({places:[{id:'nyc',displayName:{text:'New York'},types,photos:[{name:'places/nyc/photos/first'}]}]});
+ }});
+ const photo=await api.destinationPhoto('New York City, USA',0);
+ assert.equal(!!photo,types?.includes('locality')===true);
+ assert.equal(mediaCalls,types?.includes('locality')?1:0);
+}
+console.log('PASS: destinations, NYC city alias versus unrelated businesses, unknown fallback, five-photo cap, place-ID reuse/fresh metadata, attribution, secret isolation, quota, no photos, missing key and unsafe media. Google responses mocked.');

@@ -15,6 +15,11 @@ const destinations = load('lib/destinations.ts');
 const scenes = load('components/trip-covers/scenes.tsx', { 'react/jsx-runtime': jsx });
 const { TripCoverArt } = load('components/trip-cover-art.tsx', { 'react/jsx-runtime': jsx, '@/lib/destinations': destinations, '@/components/trip-covers/scenes': scenes });
 const cases = [
+  ['New York City, USA', 'New York City, USA', 'generic'],
+  ['NYC', 'New York City, USA', 'generic'],
+  ['New York', 'New York City, USA', 'generic'],
+  ['Newyork', 'New York City, USA', 'generic'],
+  ['New York, Texas', 'New York, Texas', 'generic'],
   ['Lisbon', 'Lisbon, Portugal', 'europe-city'],
   ['lisbon portugal', 'Lisbon, Portugal', 'europe-city'],
   ['东京', 'Tokyo, Japan', 'asia-city'],
