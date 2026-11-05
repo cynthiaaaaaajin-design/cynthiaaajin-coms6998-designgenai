@@ -15,7 +15,8 @@
     "test:photos": "node scripts/verify-traveler-photos.mjs",
     "test:prompt-context": "node scripts/verify-prompt-context.mjs",
     "test:metrics": "node scripts/verify-generation-metrics.mjs && node scripts/verify-generation-metrics-db.mjs",
-    "test:studio": "node scripts/verify-studio-integration.mjs"
+    "test:studio": "node scripts/verify-studio-integration.mjs",
+    "test:regional": "node scripts/verify-country-routing.mjs && node scripts/verify-regional.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.27.0",

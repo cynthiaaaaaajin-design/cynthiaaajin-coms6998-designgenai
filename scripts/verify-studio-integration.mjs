@@ -96,5 +96,6 @@ assert.equal((await as(owner,'select studio_itinerary_context($1) result',[appli
 const admin=(await as(owner,'select studio_admin_generations(0) result')).rows[0].result;
 assert.equal(admin.rows.find(r=>r.id===run.id).is_active,false);assert.equal(admin.rows.find(r=>r.id===run.id).rating_count,1);
 assert.equal(admin.rows.find(r=>r.id===proposalRun.id).is_active,true);
+if(process.env.VERIFY_REGIONAL==='1'){const {verifyRegional}=await import('./verify-regional-db.mjs');await verifyRegional({db,as,rpc,owner,member,base,testAndPublish});}
 await db.close();
 console.log('PASS: real isolated PostgreSQL publication/draft isolation, server+JWT gates, trip authorization, ordered execution, atomic completion rollback, immutable historical provenance, proposal apply linkage, feedback ownership/upsert and admin visibility. Deterministic fixtures; no live AI or deployment claims.');

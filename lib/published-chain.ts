@@ -1,4 +1,5 @@
 import 'server-only';
+import {resolveDestinationCountry} from './destination-country';
 import {executeChain,itinerarySchema,proposalSchema,type RuntimeStep} from '@tripsync/chain-runtime';
 import {createClient} from './supabase/server';
 import type {GenerationContext} from './generation-context';
@@ -16,7 +17,9 @@ export async function chainGateway(action:string,data:Record<string,unknown>) {
 }
 export async function runPublishedChain(prompt:string,days:number,context:GenerationContext|undefined,proposal=false) {
   if(!context?.tripId||!context.versionId)throw Error('A trip and itinerary context are required.');
-  const run=await chainGateway('begin',{trip_id:context.tripId,version_id:context.versionId,operation:context.operation,input:prompt}) as {id:string;snapshot:{steps:RuntimeStep[]}};
+  const routing=await chainGateway('routing_context',{trip_id:context.tripId}) as {destination:string;enabled:boolean};
+  const resolution=routing.enabled?await resolveDestinationCountry(routing.destination,process.env.GOOGLE_MAPS_API_KEY||process.env.GOOGLE_PLACES_API_KEY):undefined;
+  const run=await chainGateway('begin',{resolution,trip_id:context.tripId,version_id:context.versionId,operation:context.operation,input:prompt}) as {id:string;snapshot:{steps:RuntimeStep[]}};
   try {
     const result=await executeChain({steps:run.snapshot.steps,input:prompt,apiKey:process.env.GEMINI_API_KEY||'',model:process.env.GEMINI_MODEL||'gemini-3.8-flash',schema:proposal?proposalSchema:itinerarySchema,
       validate:text=>{if(proposal)parseProposal(text,days,context.scope||'trip',context.day??null);else parseActivities(text,days);},

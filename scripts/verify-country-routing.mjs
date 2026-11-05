@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import ts from 'typescript';
+const source=readFileSync(new URL('../lib/destination-country.ts',import.meta.url),'utf8');
+const code=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText;
+const {resolveDestinationCountry:resolve}=await import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'));
+for(const [dest,country] of [['Paris','FR'],['New York City, USA','US'],['Shanghai, China','CN'],['Tokyo','JP'],['Hong Kong','HK'],['Macau','MO'],['Taipei, Taiwan','TW']])assert.equal((await resolve(dest)).country_code,country);
+for(const dest of ['NotParis','New Yorkish','Springfield','Paris Texas','Totally unknown','Paris → Shanghai'])assert.equal((await resolve(dest)).status,'unresolved');
+let calls=0;
+const mock=async()=>{calls++;return new Response(JSON.stringify({places:[{id:'verified-id',displayName:{text:'Boston'},types:['locality'],addressComponents:[{types:['country'],shortText:'US',longText:'United States'}]}]}));};
+assert.equal((await resolve('Boston, USA','fixture-key',mock)).country_code,'US');assert.equal(calls,1);
+const ambiguous=async()=>new Response(JSON.stringify({places:[1,2].map(()=>({displayName:{text:'Boston'},types:['locality'],addressComponents:[{types:['country'],shortText:'US'}]}))}));
+assert.equal((await resolve('Boston, USA','fixture-key',ambiguous)).status,'unresolved');
+const business=async()=>new Response(JSON.stringify({places:[{displayName:{text:'Boston'},types:['store'],addressComponents:[{types:['country'],shortText:'US'}]}]}));
+assert.equal((await resolve('Boston, USA','fixture-key',business)).status,'unresolved');
+assert.equal((await resolve('Boston, USA','fixture-key',async()=>new Response('',{status:429}))).reason,'country_resolver_error');
+assert.equal((await resolve('Paris, Texas, USA','fixture-key',mock)).status,'unresolved');
+console.log('PASS: exact reviewed aliases, supported ISO countries, ambiguous/multiple/unknown destinations, structured country confirmation, non-geographic rejection and provider failure. Mock provider fixtures; no real Places/Gemini calls.');
