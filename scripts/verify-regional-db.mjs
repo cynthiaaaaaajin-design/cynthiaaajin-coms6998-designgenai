@@ -23,6 +23,15 @@ export async function verifyRegional({db,as,rpc,owner,member,base}){
   await assert.rejects(()=>as(member,'select studio_publish_regional_chain($1,$2,$3)',[c.id,c.revision,test.id]));
   published[c.template_key]=(await as(owner,'select studio_publish_regional_chain($1,$2,$3) id',[c.id,c.revision,test.id])).rows[0].id;
  }
+ const edited=structuredClone(templates[0].steps);edited[1].prompt+=' Keep this draft private until publication.';
+ await as(owner,'select studio_save_chain($1,$2,$3,$4,$5::jsonb,false)',[templates[0].id,templates[0].revision,templates[0].name,templates[0].description,JSON.stringify(edited)]);
+ await db.exec('reset role');
+ assert.deepEqual((await db.query('select snapshot from studio_chain_versions where id=$1',[published[templates[0].template_key]])).rows[0].snapshot.steps,templates[0].steps);
+ const migration=readFileSync(new URL('../sql/studio-regional-routing.sql',import.meta.url),'utf8');
+ const seed=migration.slice(migration.indexOf('do $$'),migration.indexOf('revoke all on function public.studio_publish_regional_chain'));
+ await db.exec(seed);
+ assert.equal((await db.query("select count(*) n from studio_chains where template_key like 'regional-%'")).rows[0].n,3);
+ assert.deepEqual((await db.query('select steps from studio_chains where id=$1',[templates[0].id])).rows[0].steps,edited);
  state=await config();assert.equal(state.heads.length,4);
  for(const [ruleKey,templateKey] of [['europe','regional-europe'],['north-america','regional-north-america'],['china','regional-china']]){
   const r=state.rules.find(r=>r.rule_key===ruleKey);await config({...r,enabled:true,chain_id:templates.find(t=>t.template_key===templateKey).id});
@@ -43,7 +52,9 @@ export async function verifyRegional({db,as,rpc,owner,member,base}){
  await assert.rejects(()=>config({...state.rules.find(r=>r.is_fallback),chain_id:null}));
  const request={trip_id:'1',version_id:base,operation:'revision',input:'Regional fixture',resolution:{destination:'Kyoto',status:'resolved',country_code:'FR',source:'reviewed_alias'}};
  await assert.rejects(()=>rpc(owner,'begin',{...request,resolution:{...request.resolution,destination:'Changed'}}));
- await assert.rejects(()=>rpc(owner,'begin',{...request,resolution:undefined}));
+ const compatible=await rpc(owner,'begin',{...request,resolution:undefined});
+ assert.equal(compatible.routing_decision.fallback_reason,'legacy_client_no_resolution');assert.equal(compatible.publication_id,old);
+ await rpc(owner,'fail',{id:compatible.id,error:'End legacy compatibility fixture'});
  const started=await rpc(owner,'begin',request);assert.equal(started.publication_id,published['regional-europe']);
  assert.equal(started.routing_decision.selected_rule,europe.name);
  await config({...europe,enabled:false});

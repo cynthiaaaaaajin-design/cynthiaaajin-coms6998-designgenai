@@ -131,6 +131,11 @@ begin
   perform pg_advisory_xact_lock(69982026);
   select routing_enabled into enabled from public.studio_integration_config where slot='trip-planning';
   if enabled then
+   -- Older immutable Public deployments cannot send routing metadata. Preserve
+   -- those clients through the explicit fallback, with honest attribution.
+   if p_data->'resolution' is null or p_data->'resolution'='null'::jsonb then
+    p_data:=jsonb_set(p_data,'{resolution}',jsonb_build_object('destination',t.destination,'status','unresolved','country_code',null,'source','none','reason','legacy_client_no_resolution'));
+   end if;
    if p_data->'resolution'->>'destination' is distinct from t.destination then raise exception 'Destination changed; retry routing';end if;
    if coalesce(p_data->'resolution'->>'status','') not in ('resolved','unresolved') or coalesce(p_data->'resolution'->>'source','') not in ('reviewed_alias','google_places','none') then raise exception 'Server destination resolution required';end if;
    decision:=public.studio_select_route(p_data->'resolution');
