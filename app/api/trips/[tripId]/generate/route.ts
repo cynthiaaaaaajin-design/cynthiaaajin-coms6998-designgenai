@@ -1,3 +1,4 @@
+import {reservationContext,reservationPrompt} from '@/lib/reservations-server';
 import { preferenceSnapshot, type PreferenceSnapshot } from '@/lib/itinerary-editing-server';
 import { groupPreferencePrompt } from '@/lib/collaboration';
 import { createClient } from '@/lib/supabase/server';
@@ -53,6 +54,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tri
   try {
     snapshot = await preferenceSnapshot(supabase, tripId);
     prompt += groupPreferencePrompt(snapshot.preferences, snapshot.participants.length);
+    prompt += reservationPrompt(await reservationContext(supabase,tripId));
   } catch {
     return json({ error: 'Group preferences could not be loaded. Refresh or check the Phase 3 migration before generating.' }, 500);
   }

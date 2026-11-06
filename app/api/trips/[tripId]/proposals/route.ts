@@ -1,7 +1,8 @@
+import {reservationContext,reservationPrompt} from '@/lib/reservations-server';
 import { collaborationAccess, collaborationBody, collaborationJson as json } from '@/lib/collaboration-route';
 import { uuid } from '@/lib/collaboration';
 import { tripDayCount } from '@/lib/itinerary';
-import { currentEditingContext, preferenceSnapshot } from '@/lib/itinerary-editing-server';
+import { currentEditingContext, preferenceSnapshot, loadProposals } from '@/lib/itinerary-editing-server';
 import { parseProposal, staleDraftMessage, publicationConflict, type ProposalScope } from '@/lib/itinerary-editing';
 import { loadVoteRows } from '@/lib/feedback-server';
 import { loadChangeRequests } from '@/lib/collaboration-server';
@@ -15,14 +16,14 @@ export async function POST(request: Request,{params}:{params:Promise<{tripId:str
     const {tripId}=await params;
     const access=await collaborationAccess(request,tripId);
     if(access instanceof Response) return access;
-    let input: {base: string;scope:ProposalScope;day:number|null;itemId:string|null;instruction:string};
+    let input: {base: string;scope:ProposalScope;day:number|null;itemId:string|null;instruction:string;chatMessageId:string|null};
     try {
       const body=await collaborationBody(request) as Record<string,unknown>;
       if(!body || !['activity','day','trip'].includes(String(body.scope)) || typeof body.instruction!=='string' || !body.instruction.trim() || body.instruction.length>2000) throw new Error('Choose a scope and describe your request (up to 2,000 characters).');
       const scope=body.scope as ProposalScope;
       const day=scope==='trip'?null:Number(body.day);
       if(scope!=='trip' && (!Number.isInteger(day) || day!<1 || day!>30)) throw new Error('Choose a valid day.');
-      input={base:uuid(body.base_version_id),scope,day,itemId:scope==='activity'?uuid(body.item_id):null,instruction:body.instruction.trim()};
+      input={base:uuid(body.base_version_id),scope,day,itemId:scope==='activity'?uuid(body.item_id):null,instruction:body.instruction.trim(),chatMessageId:body.chat_message_id?uuid(body.chat_message_id):null};
     } catch(e) {return json({error:e instanceof Error?e.message:'Invalid request.'},400);}
     if(input.scope==='trip' && access.trip.user_id!==access.user.id) return json({error:'Only the owner may request full regeneration.'},403);
     const {version,items}=await currentEditingContext(access.client,tripId);
@@ -32,8 +33,15 @@ export async function POST(request: Request,{params}:{params:Promise<{tripId:str
     if(input.day!==null && input.day>days || input.scope==='activity' && !items.some(i=>i.id===input.itemId&&i.day_number===input.day)) return json({error:'The selected activity or day does not belong to this itinerary.'},400);
     const preferences=await preferenceSnapshot(access.client,tripId);
     const [votes,requests]=await Promise.all([loadVoteRows(access.client,items.map(i=>i.id)),loadChangeRequests(access.client,tripId,version.id)]);
-    const trip={destination:access.trip.destination,start_date:access.trip.start_date,end_date:access.trip.end_date};
-    const prompt=buildProposalPrompt({...input,trip,days,items,preferences,votes,requests});
+    let sourceAction='itinerary_revision';
+    if(input.chatMessageId){
+      const m=await access.client.from('trip_chat_messages').select('version_id,response').eq('id',input.chatMessageId).eq('trip_id',tripId).eq('author_id',access.user.id).single();
+      if(m.error||m.data.version_id!==input.base||m.data.response?.intent!=='revision'||m.data.response.instruction!==input.instruction||m.data.response.scope!==input.scope||m.data.response.day!==input.day)return json({error:'The chat revision no longer matches this request.'},409);
+      sourceAction='chat_revision';
+    }
+    const reservations=await reservationContext(access.client,tripId);
+    const trip={reservations,source_action:sourceAction,destination:access.trip.destination,start_date:access.trip.start_date,end_date:access.trip.end_date};
+    const prompt=`Source action: ${sourceAction}.\n`+buildProposalPrompt({...input,trip,days,items,preferences,votes,requests})+reservationPrompt(reservations);
     let response: string;let integrationRunId:string|undefined;
     try {response=await generateItineraryProposal(prompt,{tripId,versionId:input.base,operation:'revision',scope:input.scope,day:input.day,itemId:input.itemId},days,id=>{integrationRunId=id;});parseProposal(response,days,input.scope,input.day);}
     catch {return json({error:'AI could not produce a valid proposal. The current itinerary is unchanged. Please try again.'},502);}
@@ -66,4 +74,13 @@ export async function PATCH(request: Request,{params}:{params:Promise<{tripId:st
     if(result.error || !result.data) return json({error:publicationConflict(result.error?.code) ?? 'The proposal could not be applied. The current itinerary is unchanged.'},publicationConflict(result.error?.code)?409:result.error?.code==='42501'?403:500);
     return json({versionId:result.data},201);
   } catch {return json({error:'Changes could not be applied. The current itinerary is unchanged.'},500);}
+}
+
+export async function GET(request:Request,{params}:{params:Promise<{tripId:string}>}){
+ try{const {tripId}=await params;const a=await collaborationAccess(request,tripId);if(a instanceof Response)return a;
+ const base=uuid(new URL(request.url).searchParams.get('base'));
+ const v=await a.client.from('itinerary_versions').select('id').eq('id',base).eq('trip_id',tripId).maybeSingle();
+ if(v.error||!v.data)return json({error:'Version unavailable.'},404);
+ return json({proposals:await loadProposals(a.client,tripId,base)});
+ }catch{return json({error:'Proposals unavailable.'},500);}
 }

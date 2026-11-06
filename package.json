@@ -16,7 +16,8 @@
     "test:prompt-context": "node scripts/verify-prompt-context.mjs",
     "test:metrics": "node scripts/verify-generation-metrics.mjs && node scripts/verify-generation-metrics-db.mjs",
     "test:studio": "node scripts/verify-studio-integration.mjs",
-    "test:regional": "node scripts/verify-country-routing.mjs && node scripts/verify-regional.mjs"
+    "test:regional": "node scripts/verify-country-routing.mjs && node scripts/verify-regional.mjs",
+    "test:tripsync2": "node scripts/verify-tripsync2.mjs && node scripts/verify-tripsync2-db.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.27.0",

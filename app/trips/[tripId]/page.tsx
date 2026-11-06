@@ -1,3 +1,4 @@
+import {TripTools} from '@/components/trip-tools';
 import { loadCommunityOrigins } from '@/lib/community-imports';
 import { PublicationControls } from '@/components/community-controls';
 import { TravelPreferences } from '@/components/travel-preferences';
@@ -183,6 +184,10 @@ export default async function TripDetail({ params, searchParams }: {
         {isOwner && <TripActions tripId={tripId} />}
         {isOwner && <PublicationControls tripId={tripId} post={publication.data} unavailable={!!publication.error} />}
         {isOwner && !placesEnabled() && <p className="notice mt-4">Google place details and map previews are not enabled for this deployment. Configure the server Places API key to enable them; your itinerary and place search links remain available.</p>}
+        <TripTools tripId={tripId} versionId={version?.id??null} userId={user.id} isOwner={isOwner} destination={trip.destination??''} start={trip.start_date??''} end={trip.end_date??''} members={isOwner && <ManageTravelers
+          key={`${tripId}:${travelersError}:${JSON.stringify(travelers)}`}
+          tripId={tripId} ownerId={user.id} initialTravelers={travelers} loadError={travelersError}
+        />}>
         <TravelPreferences tripId={tripId} userId={user.id} people={preferencePeople} preferences={preferences} error={preferencesError}>
           {isOwner && !versionError && !version && !generationIssue && <GenerateItineraryForm tripId={tripId} submitted={preferences.length} total={preferencePeople.length} preferencesError={preferencesError} />}
         </TravelPreferences>
@@ -262,10 +267,7 @@ export default async function TripDetail({ params, searchParams }: {
             <p className="notice mt-4" role="alert">{generationIssue}</p>
           </section>
         ) : null}
-        {isOwner && <ManageTravelers
-          key={`${tripId}:${travelersError}:${JSON.stringify(travelers)}`}
-          tripId={tripId} ownerId={user.id} initialTravelers={travelers} loadError={travelersError}
-        />}
+        </TripTools>
       <div id="trip-end" tabIndex={-1} className="trip-end-anchor"><span>End of trip</span><a href="#trip-top">Back to top ↑</a></div>
       </main>
     </>
