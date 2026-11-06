@@ -64,3 +64,15 @@ Supabase SQL editor inspected the actual project, existing RLS, installed public
 | E | Integrated sections, contextual onboarding/actions, loading/errors, keyboard controls, responsive CSS and preserved Admin/Studio traceability | Desktop browser observations; actual 390×844 layout inspection reported document width 390 with no horizontal overflow; device-emulation pointer automation was unreliable, so full mobile interaction coverage is not claimed |
 
 Recommended follow-up: provide three dedicated signed-in test members plus an unrelated ordinary account to finish deployed multi-account/receipt/permission testing; run touch interactions on a physical phone; obtain authorized production supplier access before implementing inventory adapters; add retention administration and dedicated per-source analytics filters only if needed. Existing Admin generation monitoring is retained; no broad private-conversation or expense access was added.
+
+## Final production release
+
+Deployed code commit: [010b119d05aeefc8dfcc1282e6b58358794b5cfd](https://github.com/cynthiaaaaaajin-design/cynthiaaajin-coms6998-designgenai/commit/010b119d05aeefc8dfcc1282e6b58358794b5cfd), pushed on `codex/tripsync2-copilot`.
+
+Ready deployment: https://cynthiaaajin-coms6998-designgenai-c41cg4d2c.vercel.app (`dpl_Futvtpv8yHfTM8K9hNv652pXxWqH`). Stable authenticated entry: https://cynthiaaajin-coms6998-designgenai.vercel.app. Use the stable domain for Google login; the new immutable host's OAuth callback was not separately allowlisted or tested.
+
+Post-deployment historical-version check: Copilot answered “You gave Version 1 an overall rating of 3 out of 5. You did not leave a written explanation or comment.” This used the existing authorized `studio_itinerary_context` RPC, rather than attempting a direct read of the protected feedback table. The query created no itinerary version.
+
+Final mobile panel measured at 390×844 viewport, normal scale: x=8, y=8, width=374, height=828; document width=390. Browser-native screenshot saved at `docs/tripsync2-evidence/copilot-mobile.png`. Full-screen history, quick actions, close control and message composer fit within the viewport. See `docs/tripsync2-release.json` for machine-readable commit/deployment IDs, real run IDs and pass/blocked results.
+
+Documentation/evidence-only commits after the deployed code SHA do not change the production application. Existing user documentation changes remain preserved and unstaged. Studio and Admin repositories were audited and reused without changes or unnecessary redeployment; Chucklesome was not modified.

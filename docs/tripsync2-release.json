@@ -1,0 +1,47 @@
+{
+  "application": "TripSync Public",
+  "branch": "codex/tripsync2-copilot",
+  "deployed_commit": "010b119d05aeefc8dfcc1282e6b58358794b5cfd",
+  "commit_url": "https://github.com/cynthiaaaaaajin-design/cynthiaaajin-coms6998-designgenai/commit/010b119d05aeefc8dfcc1282e6b58358794b5cfd",
+  "deployment_id": "dpl_Futvtpv8yHfTM8K9hNv652pXxWqH",
+  "deployment_url": "https://cynthiaaajin-coms6998-designgenai-c41cg4d2c.vercel.app",
+  "production_url": "https://cynthiaaajin-coms6998-designgenai.vercel.app",
+  "ready_state": "READY",
+  "test_trip_url": "https://cynthiaaajin-coms6998-designgenai.vercel.app/trips/31",
+  "test_trip_versions": [
+    "63a3e964-2b1c-40da-adf6-11b891802747",
+    "2ce634e6-2f51-45cf-b235-b40623147eb4",
+    "21c87664-1b63-4dac-abda-734c2049d8de"
+  ],
+  "real_chain_runs": [
+    "c71c60d9-5ce5-40b7-ace5-d06e05f21aef",
+    "1b964a0e-9fb8-43dc-9bf7-c0db8b4c9ae9",
+    "d92b7ff9-715d-47cc-8fcf-5e000650c7cf"
+  ],
+  "publication_id": "61d2dac6-0e45-4942-978f-08481558b674",
+  "publication_fingerprint_before_and_after": "7c94b116efc8d23014526b4388b59794",
+  "checks": {
+    "typescript": "passed",
+    "eslint": "passed",
+    "webpack_production_build": "passed",
+    "deterministic_three_member_ledger": "passed",
+    "postgresql_rls_and_concurrency": "passed",
+    "studio_regional_prompt_regressions": "passed",
+    "live_v1_v2_v3": "passed",
+    "live_reservations_and_draft": "passed",
+    "live_external_search_links": "passed",
+    "live_single_account_expense_cycle": "passed",
+    "live_anonymous_and_origin_guards": "passed",
+    "final_live_historical_rating_context": "passed",
+    "mobile_390x844_no_overflow_and_panel_dimensions": "passed",
+    "live_three_member_ui": "blocked: dedicated authorized sessions unavailable",
+    "live_nonmember_and_nonadmin_api": "blocked: dedicated signed-in session unavailable",
+    "mobile_pointer_automation": "partial: emulation pointer input unreliable; responsive layout inspected"
+  },
+  "screenshot": "docs/tripsync2-evidence/copilot-mobile.png",
+  "unchanged_repositories": [
+    "tripsync-chain-studio",
+    "trypsync-admin"
+  ],
+  "supplier_inventory": "No supplier credentials configured. External-search links only; no live price/availability or booking claims."
+}
