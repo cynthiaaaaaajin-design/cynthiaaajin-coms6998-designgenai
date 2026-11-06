@@ -1,6 +1,6 @@
 import 'server-only';
 import type { createClient } from './supabase/server';
-import type { PreferenceRow } from './collaboration';
+import {parseTravelPreferences,type PreferenceRow} from './collaboration';
 import type { Proposal, SavedActivity } from './itinerary-editing';
 export type PreferenceSnapshot = { participants: string[]; preferences: PreferenceRow[] };
 type Client=Awaited<ReturnType<typeof createClient>>;
@@ -19,12 +19,12 @@ export async function currentEditingContext(client: Client, tripId: string) {
 export async function loadProposals(client: Client,tripId: string,baseId: string) {
   const proposals: Proposal[]=[]; let cursor: string|undefined;
   while(true) {
-    let query=client.from('itinerary_proposals').select('id,base_version_id,created_by,scope,target_day,target_item_id,instruction,response_text,created_at,applied_version_id').eq('trip_id',tripId).eq('base_version_id',baseId).order('id').limit(100);
+    let query=client.from('itinerary_proposals').select('id,base_version_id,created_by,scope,target_day,target_item_id,instruction,response_text,created_at,applied_version_id,trip_context').eq('trip_id',tripId).eq('base_version_id',baseId).order('id').limit(100);
     if(cursor) query=query.gt('id',cursor);
     const {data,error}=await query;
     if(error) throw new Error('AI proposals unavailable. Check the Phase 3 migration.');
     if(!data?.length) break;
-    proposals.push(...data as Proposal[]);cursor=data.at(-1)!.id;
+    proposals.push(...data.map(row=>({...row,decision_id:row.trip_context?.group_decision?.round_id??null})) as Proposal[]);cursor=data.at(-1)!.id;
   }
   return proposals.sort((a,b)=>b.created_at.localeCompare(a.created_at));
 }
@@ -39,5 +39,6 @@ export async function preferencesChanged(client: Client,tripId: string): Promise
     if(v && typeof v==='object') return `{${Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+stable((v as Record<string,unknown>)[k])).join(',')}}`;
     return JSON.stringify(v);
   }
-  return stable(snapshot)!==stable(latestAI.data.preference_snapshot);
+  function normalized(value:PreferenceSnapshot){return {...value,preferences:value.preferences.map(row=>({user_id:row.user_id,...parseTravelPreferences(row)}))};}
+  return stable(normalized(snapshot))!==stable(normalized(latestAI.data.preference_snapshot));
 }

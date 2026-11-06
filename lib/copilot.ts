@@ -1,4 +1,4 @@
-export const copilotIntents = ['question','revision','reservation_revision','flight_search','hotel_search','reservation','expense','clarification'] as const;
+export const copilotIntents = ['question','revision','reservation_revision','flight_search','hotel_search','reservation','expense','clarification','group_decision'] as const;
 export type CopilotIntent = typeof copilotIntents[number];
 export type ReservationDraft={kind:'flight'|'hotel';details:Record<string,string>};
 export type CopilotReply = {intent:CopilotIntent;reply:string;scope:'day'|'trip';day:number|null;instruction:string;reservation_draft?:ReservationDraft|null};

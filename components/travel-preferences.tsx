@@ -1,9 +1,10 @@
 'use client';
 import { useState, useRef, type FormEvent, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
+import {activityTopics} from '@/lib/collaboration';
 import type { Person, PreferenceRow } from '@/lib/collaboration';
-export function TravelPreferences({ tripId, userId, people, preferences, error, children }: {
-  tripId: string; userId: string; people: Person[]; preferences: PreferenceRow[]; error: boolean; children?: ReactNode;
+export function TravelPreferences({ tripId, userId, people, preferences, error, children, onSaved }: {
+  tripId: string; userId: string; people: Person[]; preferences: PreferenceRow[]; error: boolean; children?: ReactNode; onSaved?:()=>void;
 }) {
   const mine = preferences.find(row => row.user_id === userId);
   const router = useRouter();
@@ -18,19 +19,20 @@ export function TravelPreferences({ tripId, userId, people, preferences, error, 
     const form = new FormData(event.currentTarget);
     const data: Record<string, unknown> = Object.fromEntries(form);
     data.budget_amount = form.get('budget_amount') === '' ? null : Number(form.get('budget_amount'));
-    for (const key of ['must_visit_places', 'interests', 'hard_constraints']) data[key] = String(form.get(key) ?? '').split('\n').map(s => s.trim()).filter(Boolean);
+    for (const key of ['must_visit_places', 'interests', 'hard_constraints', 'dietary_restrictions', 'preferred_transportation']) data[key] = String(form.get(key) ?? '').split('\n').map(s => s.trim()).filter(Boolean);
+    data.activity_choices = Object.fromEntries(Object.keys(activityTopics).map(key=>[key,form.get(`activity:${key}`)]).filter(([,value])=>!!value));
     lock.current = true; setBusy(true); setFailure(''); setMessage('');
     try {
       const response = await fetch(`/api/trips/${tripId}/preferences`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Preferences could not be saved.');
-      setMessage('Your preferences are saved.'); setEditing(false); router.refresh();
+      setMessage('Your preferences are saved.'); setEditing(false); router.refresh(); onSaved?.();
     } catch (e) { setFailure(e instanceof Error ? e.message : 'Unable to connect. Try again.'); }
     finally { lock.current = false; setBusy(false); }
   }
   return <section className="settings-card generation-section travel-preferences mt-8" aria-labelledby="travel-preferences-heading">
     <h2 id="travel-preferences-heading" className="text-2xl font-semibold">Travel preferences</h2>
-    <p className="mt-2 text-sm text-slate-500">Tell your group what matters most to you.</p>
+    <p className="mt-2 text-sm text-slate-500">Only you can edit your preferences. Everything submitted here is shared with this trip’s current members and used for AI planning. Leave details blank that you do not want to share.</p>
     {error ? <p className="notice mt-3" role="alert">Preferences are unavailable. Check the collaboration migration and refresh.</p> : <>
       <p className="mt-3 text-sm">{preferences.length} of {people.length} travelers have shared their preferences.</p>
       <div className="feedback-progress-track mt-3" role="progressbar" aria-label="Travel preferences participation" aria-valuemin={0} aria-valuemax={people.length} aria-valuenow={preferences.length}>
@@ -47,10 +49,14 @@ export function TravelPreferences({ tripId, userId, people, preferences, error, 
           <label>Travel pace<select name="travel_pace" defaultValue={mine?.travel_pace ?? 'balanced'}><option value="relaxed">Relaxed</option><option value="balanced">Balanced</option><option value="packed">Packed</option></select></label>
           <label className="md:col-span-2">Budget notes<textarea name="budget_notes" rows={2} maxLength={2000} placeholder="For example, excludes flights" defaultValue={mine?.budget_notes ?? ''} /></label>
           {(['must_visit_places', 'interests', 'hard_constraints'] as const).map(key => <label key={key} className={key === 'hard_constraints' ? 'md:col-span-2' : ''}>
-            {{ must_visit_places: 'Must-visit places', interests: 'Interests', hard_constraints: 'Hard constraints / things you cannot accept' }[key]}
+            {{ must_visit_places: 'Must-have activities / places', interests: 'Nice-to-have interests', hard_constraints: 'Hard constraints / things you cannot accept' }[key]}
             <textarea name={key} rows={3} maxLength={9029} defaultValue={mine?.[key].join('\n') ?? ''} placeholder={key === 'hard_constraints' ? 'For example: I cannot walk more than 3 km per day.' : 'One entry per line'} />
             <span className="mt-1 block text-xs font-normal text-slate-500">{key === 'hard_constraints' ? 'Requirements the plan must respect, distinct from ordinary preferences. ' : ''}One entry per line; up to 30 entries of 300 characters.</span>
           </label>)}
+          <fieldset className="md:col-span-2 preference-priorities"><legend>Shared activity priorities</legend><p className="text-xs text-slate-500">Use “Cannot accept” only for an explicit restriction. Unspecified is not a vote against an activity.</p><div className="grid gap-3 md:grid-cols-2">{Object.entries(activityTopics).map(([key,label])=><label key={key}>{label}<select name={`activity:${key}`} defaultValue={mine?.activity_choices?.[key as keyof typeof activityTopics]??''}><option value="">Unspecified</option><option value="must">Must have</option><option value="nice">Nice to have</option><option value="avoid">Cannot accept</option></select></label>)}</div></fieldset>
+          <label>Dietary restrictions<textarea name="dietary_restrictions" rows={2} maxLength={9029} placeholder="One restriction per line" defaultValue={mine?.dietary_restrictions?.join('\n')??''}/></label>
+          <label>Preferred transportation<textarea name="preferred_transportation" rows={2} maxLength={9029} placeholder="One preference per line" defaultValue={mine?.preferred_transportation?.join('\n')??''}/></label>
+          <label>Available from (optional)<input name="availability_start" type="date" defaultValue={mine?.availability_start??''}/></label><label>Available through (optional)<input name="availability_end" type="date" defaultValue={mine?.availability_end??''}/></label>
           <label className="md:col-span-2">Additional notes<textarea name="additional_notes" rows={2} maxLength={2000} defaultValue={mine?.additional_notes ?? ''} /></label>
           <div><button className="button-primary" type="submit">{busy ? 'Saving…' : 'Save preferences'}</button></div>
         </fieldset>
@@ -60,7 +66,9 @@ export function TravelPreferences({ tripId, userId, people, preferences, error, 
           <strong>{people.find(p => p.user_id === row.user_id)?.name || `Traveler ${row.user_id.slice(0, 8)}`}{row.user_id === userId ? ' (you)' : ''}</strong>
           <p className="mt-1">Budget: {row.budget_amount === null ? 'Not specified' : `${row.budget_currency} ${row.budget_amount} ${row.budget_scope === 'per_person_day' ? 'per person per day' : 'per person for the trip'}`} · Pace: {row.travel_pace}</p>
           {row.budget_notes && <p className="whitespace-pre-wrap">Budget notes: {row.budget_notes}</p>}
-          {(['must_visit_places', 'interests', 'hard_constraints'] as const).map(key => row[key].length > 0 && <p key={key} className="mt-1 whitespace-pre-wrap"><strong>{{ must_visit_places: 'Must-visit places', interests: 'Interests', hard_constraints: 'Hard constraints' }[key]}:</strong> {row[key].join('; ')}</p>)}
+          {(['must_visit_places', 'interests', 'hard_constraints'] as const).map(key => row[key].length > 0 && <p key={key} className="mt-1 whitespace-pre-wrap"><strong>{{ must_visit_places: 'Must-have activities / places', interests: 'Nice-to-have interests', hard_constraints: 'Hard constraints' }[key]}:</strong> {row[key].join('; ')}</p>)}
+          {Object.keys(row.activity_choices??{}).length>0&&<p>Activity priorities: {Object.entries(row.activity_choices??{}).map(([k,v])=>`${activityTopics[k as keyof typeof activityTopics]}: ${v==='avoid'?'cannot accept':v==='must'?'must have':'nice to have'}`).join('; ')}</p>}
+          {!!row.dietary_restrictions?.length&&<p>Dietary restrictions: {row.dietary_restrictions.join('; ')}</p>}{!!row.preferred_transportation?.length&&<p>Transportation: {row.preferred_transportation.join('; ')}</p>}{row.availability_start&&<p>Availability: {row.availability_start} through {row.availability_end}</p>}
           {row.additional_notes && <p className="mt-1 whitespace-pre-wrap">Notes: {row.additional_notes}</p>}
         </li>)}
       </ul></details>}

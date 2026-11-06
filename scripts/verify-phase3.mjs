@@ -33,18 +33,21 @@ const snapshot={participants:[owner,member],preferences:[{user_id:member,budget_
 const state={user:owner,outsider:false,current:base,rpcError:null,aiError:false,response:JSON.stringify(aiBody),calls:[],generatedPrompt:''};
 const client={
  auth:{getUser:async()=>({data:{user:state.user?{id:state.user}:null}})},
- rpc:async(name,args)=>{state.calls.push({name,args});return {data:state.rpcError?null:proposalId,error:state.rpcError?{code:state.rpcError}:null};},
+ rpc:async(name,args)=>{if(name==='studio_itinerary_context')return {data:{feedback:null},error:null};state.calls.push({name,args});return {data:state.rpcError?null:proposalId,error:state.rpcError?{code:state.rpcError}:null};},
 };
 const common=load('../lib/collaboration-route.ts',{'@/lib/supabase/server':{createClient:async()=>client},'@/lib/feedback-server':{accessibleTrip:async()=>state.outsider?null:{user_id:owner,destination:'Paris',start_date:'2026-10-10',end_date:'2026-10-10'}},'@/lib/itinerary':itinerary});
 const deps={'@/lib/collaboration-route':common,'@/lib/collaboration':collaboration,'@/lib/itinerary':itinerary,'@/lib/itinerary-editing':editing};
 const manual=load('../app/api/trips/[tripId]/edit/route.ts',deps);
-const proposal=load('../app/api/trips/[tripId]/proposals/route.ts',{...deps,
+const service=load('../lib/itinerary-proposal-service.ts',{...deps,
+ 'server-only':{},
+ '@/lib/reservations-server':{reservationContext:async()=>[],reservationPrompt:()=>''},
  '@/lib/published-chain':{chainGateway:async()=>{throw Error('Unexpected published call in legacy regression');}},
  '@/lib/itinerary-editing-server':{currentEditingContext:async()=>({version:{id:state.current},items}),preferenceSnapshot:async()=>snapshot},
  '@/lib/feedback-server':{loadVoteRows:async()=>[{id:'1',item_id:item,user_id:member,value:-1,comment:'Too tiring'}]},
  '@/lib/collaboration-server':{loadChangeRequests:async()=>[{item_id:item,created_by:member,status:'pending',request_type:'replacement',suggested_replacement:'Park',comment:'Flat paths'}]},
  '@/lib/proposal-prompt':prompts,'@/lib/gemini':{generateItineraryProposal:async prompt=>{state.generatedPrompt=prompt;if(state.aiError)throw new Error('Offline');return state.response;}},
 });
+const proposal=load('../app/api/trips/[tripId]/proposals/route.ts',{...deps,'@/lib/itinerary-proposal-service':service,'@/lib/itinerary-editing-server':{}});
 async function call(route,body,method='POST',headers={}) {
  return route[method](new Request('http://localhost/api/trips/1/action',{method,headers,body:JSON.stringify(body)}),{params:Promise.resolve({tripId:'1'})});
 }

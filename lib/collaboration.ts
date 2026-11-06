@@ -1,8 +1,11 @@
+export const activityTopics = { museums: 'Museums', shopping: 'Shopping', hiking: 'Hiking', nightlife: 'Nightlife', beaches: 'Beaches', food: 'Food experiences', history: 'Historic sites', art: 'Art galleries' } as const;
 export const requestTypes = { general: 'General feedback', schedule: 'Schedule problem', too_expensive: 'Too expensive', too_tiring: 'Too tiring', not_interested: 'Not interested', replacement: 'Suggest replacement', other: 'Other' } as const;
 export type TravelPreferences = {
   budget_amount: number | null; budget_currency: string; budget_scope: 'per_person_total' | 'per_person_day';
   budget_notes: string | null; travel_pace: 'relaxed' | 'balanced' | 'packed';
   must_visit_places: string[]; interests: string[]; hard_constraints: string[]; additional_notes: string | null;
+  activity_choices?: Partial<Record<keyof typeof activityTopics, 'must' | 'nice' | 'avoid'>>;
+  dietary_restrictions?: string[]; preferred_transportation?: string[]; availability_start?: string|null; availability_end?: string|null;
 };
 export type PreferenceRow = TravelPreferences & { user_id: string };
 export type Person = { user_id: string; name: string | null };
@@ -34,7 +37,12 @@ export function parseTravelPreferences(input: unknown): TravelPreferences {
   if (typeof d.budget_currency !== 'string' || !/^[A-Z]{3}$/.test(d.budget_currency)) throw new Error('Use a three-letter currency code, such as USD.');
   if (d.budget_scope !== 'per_person_total' && d.budget_scope !== 'per_person_day') throw new Error('Choose a budget scope.');
   if (d.travel_pace !== 'relaxed' && d.travel_pace !== 'balanced' && d.travel_pace !== 'packed') throw new Error('Choose your travel pace.');
-  return { budget_amount: d.budget_amount as number | null, budget_currency: d.budget_currency, budget_scope: d.budget_scope, budget_notes: text(d.budget_notes), travel_pace: d.travel_pace, must_visit_places: list(d.must_visit_places), interests: list(d.interests), hard_constraints: list(d.hard_constraints), additional_notes: text(d.additional_notes) };
+  const choices = d.activity_choices ?? {};
+  if (!choices || typeof choices !== 'object' || Array.isArray(choices) || Object.entries(choices).some(([k,v]) => !Object.hasOwn(activityTopics,k) || !['must','nice','avoid'].includes(String(v)))) throw new Error('Choose valid activity priorities.');
+  function date(value:unknown):string|null { if(value==null||value==='')return null;if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(value)||!Number.isFinite(Date.parse(value+'T00:00:00Z'))||new Date(value+'T00:00:00Z').toISOString().slice(0,10)!==value)throw Error('Use a valid availability date.');return value; }
+  const availability_start=date(d.availability_start), availability_end=date(d.availability_end);
+  if((availability_start===null)!==(availability_end===null)||availability_start&&availability_end&&availability_end<availability_start)throw Error('Set both availability dates, with the end on or after the start.');
+  return { activity_choices:choices as TravelPreferences['activity_choices'], dietary_restrictions:list(d.dietary_restrictions??[]), preferred_transportation:list(d.preferred_transportation??[]),availability_start,availability_end,budget_amount: d.budget_amount as number | null, budget_currency: d.budget_currency, budget_scope: d.budget_scope, budget_notes: text(d.budget_notes), travel_pace: d.travel_pace, must_visit_places: list(d.must_visit_places), interests: list(d.interests), hard_constraints: list(d.hard_constraints), additional_notes: text(d.additional_notes) };
 }
 export function parseChangeRequest(input: unknown) {
   const d = object(input);

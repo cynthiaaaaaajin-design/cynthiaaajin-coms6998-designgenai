@@ -17,7 +17,8 @@
     "test:metrics": "node scripts/verify-generation-metrics.mjs && node scripts/verify-generation-metrics-db.mjs",
     "test:studio": "node scripts/verify-studio-integration.mjs",
     "test:regional": "node scripts/verify-country-routing.mjs && node scripts/verify-regional.mjs",
-    "test:tripsync2": "node scripts/verify-tripsync2.mjs && node scripts/verify-tripsync2-db.mjs"
+    "test:tripsync2": "node scripts/verify-tripsync2.mjs && node scripts/verify-tripsync2-db.mjs",
+    "test:tripsync3": "node scripts/verify-tripsync3.mjs && node scripts/verify-tripsync3-db.mjs && node scripts/verify-tripsync3-chain.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.27.0",

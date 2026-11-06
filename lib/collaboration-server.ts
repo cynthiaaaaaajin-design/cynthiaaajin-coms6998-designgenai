@@ -14,7 +14,7 @@ export async function loadPreferences(client: Client, tripId: string) {
   const rows: PreferenceRow[] = [];
   let cursor: string | undefined;
   while (true) {
-    let query = client.from('trip_preferences').select('user_id,budget_amount,budget_currency,budget_scope,budget_notes,travel_pace,must_visit_places,interests,hard_constraints,additional_notes').eq('trip_id', tripId).order('user_id').limit(200);
+    let query = client.from('trip_preferences').select('user_id,budget_amount,budget_currency,budget_scope,budget_notes,travel_pace,must_visit_places,interests,hard_constraints,additional_notes,activity_choices,dietary_restrictions,preferred_transportation,availability_start,availability_end').eq('trip_id', tripId).order('user_id').limit(200);
     if (cursor) query = query.gt('user_id', cursor);
     const result = await query;
     if (result.error) throw new Error('Travel preferences could not be loaded. Check the collaboration migration and refresh.');

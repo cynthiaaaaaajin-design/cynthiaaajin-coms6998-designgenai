@@ -10,7 +10,7 @@ export type SavedActivity = ItineraryActivity & { id: string; origin?: string };
 export type ProposalScope = 'activity' | 'day' | 'trip';
 export type ProposalBody = { activities: EditableActivity[]; explanation: string; uncertainties: string[] };
 export type Proposal = {
-  id: string; base_version_id: string; created_by: string; scope: ProposalScope; target_day: number | null;
+  decision_id?:string|null; id: string; base_version_id: string; created_by: string; scope: ProposalScope; target_day: number | null;
   target_item_id: string | null; instruction: string; response_text: string; created_at: string; applied_version_id: string | null;
 };
 export function asDraft(items: SavedActivity[]): EditableActivity[] {

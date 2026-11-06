@@ -49,10 +49,10 @@ function formatDate(value: string | null) {
 
 export default async function TripDetail({ params, searchParams }: {
   params: Promise<{ tripId: string }>;
-  searchParams: Promise<{ version?: string | string[] }>;
+  searchParams: Promise<{ version?: string | string[]; section?: string | string[] }>;
 }) {
   const { tripId } = await params;
-  const { version: selectedId } = await searchParams;
+  const { version: selectedId, section } = await searchParams;
   if (!validTripId(tripId)) notFound();
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -184,7 +184,7 @@ export default async function TripDetail({ params, searchParams }: {
         {isOwner && <TripActions tripId={tripId} />}
         {isOwner && <PublicationControls tripId={tripId} post={publication.data} unavailable={!!publication.error} />}
         {isOwner && !placesEnabled() && <p className="notice mt-4">Google place details and map previews are not enabled for this deployment. Configure the server Places API key to enable them; your itinerary and place search links remain available.</p>}
-        <TripTools tripId={tripId} versionId={version?.id??null} userId={user.id} isOwner={isOwner} destination={trip.destination??''} start={trip.start_date??''} end={trip.end_date??''} members={isOwner && <ManageTravelers
+        <TripTools initialSection={section==='decisions'?'Group Decisions':'Itinerary'} tripId={tripId} versionId={version?.id??null} userId={user.id} isOwner={isOwner} destination={trip.destination??''} start={trip.start_date??''} end={trip.end_date??''} members={isOwner && <ManageTravelers
           key={`${tripId}:${travelersError}:${JSON.stringify(travelers)}`}
           tripId={tripId} ownerId={user.id} initialTravelers={travelers} loadError={travelersError}
         />}>
