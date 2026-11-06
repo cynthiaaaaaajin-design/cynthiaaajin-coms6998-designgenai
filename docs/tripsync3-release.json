@@ -1,0 +1,37 @@
+{
+  "deployed_code_sha": "c885dbe0e0706d608e2de46e1fc63de8426806c4",
+  "branch": "codex/tripsync3-group-decisions",
+  "deployment_id": "dpl_8dpWbrXANxobMVm78uPeMmovmm6S",
+  "url": "https://cynthiaaajin-coms6998-designgenai.vercel.app",
+  "immutable_url": "https://cynthiaaajin-coms6998-designgenai-41gg3zacl.vercel.app",
+  "status": "READY",
+  "migrations": [
+    "sql/tripsync3-preferences.sql",
+    "sql/tripsync3-publication-context.sql",
+    "sql/tripsync3-decisions.sql"
+  ],
+  "live_qa": {
+    "trip_id": 32,
+    "participants": 1,
+    "kind": "solo\u2014not group consensus",
+    "decision_id": "f20a76a0-7f42-4a2a-9db1-3fa3d4d83839",
+    "parent_version": "eb547bfa-c3ee-42b1-a291-4d0de451e6fc",
+    "applied_version": "9097a748-f836-4d2a-9ad3-b9833541112f",
+    "day1_unchanged": true,
+    "old_rating_preserved": true,
+    "real_candidate_runs": [
+      "5bc9cab5-e432-46a1-88ff-e79474112db8",
+      "38f896df-85aa-4f0b-81a0-d3c93167a9f1"
+    ],
+    "publication_id": "61d2dac6-0e45-4942-978f-08481558b674",
+    "votes": 1,
+    "copilot_explanation_verified": true,
+    "admin_linkage_verified": true
+  },
+  "blocked_live_tests": [
+    "distinct member submissions and conflicts",
+    "independent member votes and multi-person thresholds/deadlines",
+    "signed-in nonmember access"
+  ],
+  "original_user_work_preserved": true
+}
