@@ -40,8 +40,9 @@ export async function POST(request:Request,{params}:Context){
   if(items.error||history.error||reservations.error)throw Error('Context unavailable');
   const activities=items.data?.itinerary_items??[];
   const votes=latestVotes(await loadVoteRows(a.client,activities.map((i:{id:string})=>i.id))).filter(v=>preferences.participants.includes(v.user_id)).slice(0,120);
-  const overall=versionId?await a.client.from('itinerary_feedback').select('rating,comment').eq('version_id',versionId).limit(50):{data:[],error:null};
-  const context={current_message:b.content.trim(),trip:a.trip,selected_version:items.data,preferences,feedback:votes,overall_feedback:overall.data??[],reservations:reservations.data??[],history:(history.data??[]).reverse()};
+  const overall=versionId?await a.client.rpc('studio_itinerary_context',{p_version:versionId}):{data:[],error:null};
+  if(overall.error)throw Error('Itinerary feedback unavailable.');
+  const context={current_message:b.content.trim(),trip:a.trip,selected_version:items.data,preferences,feedback:votes,overall_feedback:overall.data?.feedback??null,reservations:reservations.data??[],history:(history.data??[]).reverse()};
   while(JSON.stringify(context).length>90000&&context.history.length)context.history.shift();
   if(JSON.stringify(context).length>90000)throw Error('Trip context is too large for this conversation.');
   const response=await new GoogleGenAI({apiKey:process.env.GEMINI_API_KEY}).models.generateContent({
@@ -52,7 +53,8 @@ export async function POST(request:Request,{params}:Context){
   const reply=parseCopilotReply(response.text??'');
   if(['revision','reservation_revision'].includes(reply.intent))reply.reply=`I can prepare a ${reply.scope==='day'?`Day ${reply.day}`:'trip'} revision from your request. Generate a preview to review the actual changes before applying them.`;
   if(reply.intent==='flight_search'||reply.intent==='hotel_search')reply.reply='Open the search form to prepare an external provider search. Prices and availability have not been checked.';
-  if(reply.intent==='reservation'&&reply.reservation_draft)reply.reply+=' Review the extracted details, complete any missing fields, and explicitly select the reservation status before saving.';
+  if(reply.intent==='reservation'){const required=reply.reservation_draft?.kind==='flight'?['departure_airport','arrival_airport','departure_local','arrival_local','departure_timezone','arrival_timezone']:['name','address','checkin_local','checkout_local','timezone'];const missing=required.filter(k=>!reply.reservation_draft?.details[k]);reply.reply=`Open the reservation review form${reply.reservation_draft?' with the details extracted from your message':''}. Nothing has been saved or booked.${missing.length?` Please add: ${missing.map(k=>k.replaceAll('_',' ')).join(', ')}.`:''} Explicitly choose the reservation status before saving.`;}
+  if(reply.intent==='expense')reply.reply='Open the expense review form to confirm the amount, currency, payer and participants. Nothing has been saved or paid.';
   const completed=await a.client.rpc('copilot_message',{...args,p_response:reply});
   if(completed.error) return json({error:'The assistant response could not be stored. Retry this message.'},503);
   return json({message:completed.data});

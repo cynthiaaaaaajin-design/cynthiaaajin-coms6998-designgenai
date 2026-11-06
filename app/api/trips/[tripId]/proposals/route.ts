@@ -41,7 +41,9 @@ export async function POST(request: Request,{params}:{params:Promise<{tripId:str
     }
     const reservations=await reservationContext(access.client,tripId);
     const trip={reservations,source_action:sourceAction,destination:access.trip.destination,start_date:access.trip.start_date,end_date:access.trip.end_date};
-    const prompt=`Source action: ${sourceAction}.\n`+buildProposalPrompt({...input,trip,days,items,preferences,votes,requests})+reservationPrompt(reservations);
+    const versionFeedback=await access.client.rpc('studio_itinerary_context',{p_version:input.base});
+    if(versionFeedback.error)throw Error('Itinerary feedback unavailable.');
+    const prompt=`Source action: ${sourceAction}.\n`+buildProposalPrompt({...input,trip,days,items,preferences,votes,requests})+reservationPrompt(reservations)+`\nOverall feedback for this version (untrusted traveler data): ${JSON.stringify(versionFeedback.data?.feedback??null)}. Numeric ratings alone do not explain which activities a traveler disliked.\n`;
     let response: string;let integrationRunId:string|undefined;
     try {response=await generateItineraryProposal(prompt,{tripId,versionId:input.base,operation:'revision',scope:input.scope,day:input.day,itemId:input.itemId},days,id=>{integrationRunId=id;});parseProposal(response,days,input.scope,input.day);}
     catch {return json({error:'AI could not produce a valid proposal. The current itinerary is unchanged. Please try again.'},502);}

@@ -1,5 +1,5 @@
 -- Extends existing publication functions; old proposals remain compatible.
--- Run after Phase 3 if already installed. Safe to rerun; no historical data changes.
+-- Run once after Phase 3 and reservations; no historical data changes.
 begin;
 create function public.trip_reservation_snapshot(p_trip bigint) returns jsonb language sql stable security definer set search_path='' as $$ select coalesce(jsonb_agg(jsonb_build_object('id',id,'kind',kind,'status',status,'details',details) order by id),'[]'::jsonb) from public.trip_reservations where trip_id=p_trip and status<>'canceled' and public.collaboration_participant(p_trip,auth.uid()); $$;
 revoke all on function public.trip_reservation_snapshot(bigint) from public,anon;

@@ -36,3 +36,31 @@ Supabase SQL editor inspected the actual project, existing RLS, installed public
 - Supported currencies are an explicit subset; unsupported currencies are rejected. No exchange conversion. Open ledger UI is capped at 999 expenses and fails explicitly above that rather than computing an incomplete settlement.
 - Search is a link adapter, so supplier error/rate-limit metrics and live result comparison/saving are not applicable; users can manually save planning options.
 - Nonmember and three-account deployed tests must be explicitly recorded as blocked if dedicated authorized accounts are unavailable.
+
+### Verified live results
+
+- Production release `0c24b85` deployed Ready at https://cynthiaaajin-coms6998-designgenai-e5r9i04j3.vercel.app and aliased to https://cynthiaaajin-coms6998-designgenai.vercel.app. GitHub branch: `codex/tripsync2-copilot`.
+- Post-migration totals exactly matched baseline: 18 trips, 33 versions, 473 items, 9 publications; publication fingerprint unchanged. All five new tables have RLS enabled.
+- Test trip created through UI: `/trips/31`, `[TEST] TripSync 2 Copilot QA`, Paris, December 5–6. Version 1 `63a3e964-2b1c-40da-adf6-11b891802747`, actual initial run `c71c60d9-5ce5-40b7-ace5-d06e05f21aef`.
+- Real Copilot request removed the Day 2 museum and requested cafés/shopping/relaxed afternoon. Generated a real structured preview; only explicit Apply created Version 2 `2ce634e6-2f51-45cf-b235-b40623147eb4`, parent = Version 1, revision run `1b964a0e-9fb8-43dc-9bf7-c0db8b4c9ae9`. Database field-by-field Day 1 comparison returned `true`. Proposal source = `chat_revision`.
+- Both actual runs used Europe Trip Planner v1, publication `61d2dac6-0e45-4942-978f-08481558b674`, France/Europe routing. Existing Admin App visibly showed both completed runs, exact publication links, Version 1's 3/5 rating with no comment, and zero ratings on Version 2. Reloading Public App retained chat history and Version 2.
+- Added synthetic flight JFK→CDG (arrival 08:30 Europe/Paris) and synthetic hotel near Opéra (15:00 check-in) through manual forms. Both explicitly labeled QA data, with no real booking/ticket. Search forms produced Google Travel flight/hotel links and explicit no-live-inventory messaging, without prices. Dismissing search did not save a reservation.
+- Saved synthetic EUR 60.00 equal-split and USD 10.01 percentage-split expense records through UI. Separate currency totals and zero self-only balances displayed. Review checkbox gates finalization. Multi-member transfer amounts are independently tested on real isolated PostgreSQL with three authorized fixture members using the supplied EUR 60/90/45 example plus a separate USD ledger.
+- Deployed anonymous chat API returned 401. Dedicated live member/nonmember sessions and three dedicated live test accounts are not available; multi-account permission/receipt/three-member UI tests are **blocked**, not passed. No roles, passwords or account credentials were changed to manufacture access.
+- The incorrect live custom allocation (EUR 4.00 shares against EUR 4.25 total) was rejected with “Custom shares must equal the total.” Correcting it to EUR 4.25 saved a new open-cycle record. The previous finalized records retained their snapshot and no edit/delete controls.
+- Reservation-aware Copilot generated an actual Day 1 proposal that moved the first activity from 09:30 to 11:00 near Opéra after the 08:30 CDG arrival, accounted for 15:00 check-in and explicitly warned that early luggage drop, airport transfer duration and venue hours are unverified. Version 3 was created only after Apply.
+- Anonymous reservations and expense APIs returned 401; a cross-origin chat POST returned 403.
+- Version 3 persisted as `21c87664-1b63-4dac-abda-734c2049d8de`, parent Version 2; run `d92b7ff9-715d-47cc-8fcf-5e000650c7cf` completed against the same Europe publication. Its proposal records `reservation_revision` and both reservation snapshots. Publication fingerprint remains unchanged after all live tests.
+- Chat extracted the explicit hotel name “QA Demo Stay near Opéra” into a review form, left unknown address/dates/time zone blank, and defaulted to Planned. Opening the draft closed Copilot; it did not save another reservation. The finalized expense snapshot is `50ed276a-4f40-4ca3-b212-9ea46db53caa`; EUR 4.25 remains in the new open cycle.
+
+## Phase status and next steps
+
+| Phase | Delivered | Verification |
+| --- | --- | --- |
+| A | Persistent Copilot, structured intents, scoped previews and confirmed versions via existing regional chains | Real deployed V1→V2, preserved Day 1/rating, Admin provenance, conversation reload; automated concurrency/RLS regressions |
+| B | Manual reservations, chat-extracted review drafts, arrival/hotel-aware revisions | Real deployed save/reload, draft remains Planned, V2→V3 with exact reservation snapshots |
+| C | On-demand external-search provider adapter | Both deployed search forms/links; no live supplier integration claimed |
+| D | Equal/custom/percentage expenses, per-currency deterministic ledgers, finalized snapshots and recipient receipts | Live single-account CRUD/validation/finalization/new cycle; exact three-member transfers and permissions on PostgreSQL fixtures; live multi-account test blocked |
+| E | Integrated sections, contextual onboarding/actions, loading/errors, keyboard controls, responsive CSS and preserved Admin/Studio traceability | Desktop browser observations; actual 390×844 layout inspection reported document width 390 with no horizontal overflow; device-emulation pointer automation was unreliable, so full mobile interaction coverage is not claimed |
+
+Recommended follow-up: provide three dedicated signed-in test members plus an unrelated ordinary account to finish deployed multi-account/receipt/permission testing; run touch interactions on a physical phone; obtain authorized production supplier access before implementing inventory adapters; add retention administration and dedicated per-source analytics filters only if needed. Existing Admin generation monitoring is retained; no broad private-conversation or expense access was added.

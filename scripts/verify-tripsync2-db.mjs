@@ -56,10 +56,13 @@ const revision={activities:[{day_number:2,position:0,start_time:'14:00',title:'C
 const proposal=(await as(owner,'select save_itinerary_proposal(1,$1,\'day\',2,null,\'Relax\',\'Prompt\',$2,$3::jsonb,$4::jsonb) id',[base,JSON.stringify(revision),JSON.stringify(pref),JSON.stringify({destination:'Paris',start_date:'2026-10-10',end_date:'2026-10-11',reservations:reservationSnapshot})])).rows[0].id;
 await as(member,"update trip_reservations set status='booked' where id=$1",[booking]);
 await denied(owner,'select apply_itinerary_proposal(1,$1)',[proposal],'P3001');
+const ben='99999999-9999-4999-8999-999999999999';
+await db.exec(`reset role;insert into profiles values('${ben}','Ben','QA');insert into trip_members values(1,'${ben}');`);
 const values=[
  {id:'81111111-1111-4111-8111-111111111111',description:'Dinner',amount:6000,currency:'EUR',payer_id:owner,allocations:[{user_id:owner,amount:3000},{user_id:member,amount:3000}]},
- {id:'82222222-2222-4222-8222-222222222222',description:'Ride',amount:9000,currency:'EUR',payer_id:member,allocations:[{user_id:owner,amount:4500},{user_id:member,amount:4500}]},
- {id:'83333333-3333-4333-8333-333333333333',description:'USD',amount:1001,currency:'USD',payer_id:owner,allocations:[{user_id:owner,amount:501},{user_id:member,amount:500}]}
+ {id:'82222222-2222-4222-8222-222222222222',description:'Ride',amount:9000,currency:'EUR',payer_id:member,allocations:[{user_id:owner,amount:3000},{user_id:member,amount:3000},{user_id:ben,amount:3000}]},
+ {id:'86666666-6666-4666-8666-666666666666',description:'Tickets',amount:4500,currency:'EUR',payer_id:ben,allocations:[{user_id:owner,amount:2250},{user_id:ben,amount:2250}]},
+ {id:'83333333-3333-4333-8333-333333333333',description:'USD',amount:1001,currency:'USD',payer_id:owner,allocations:[{user_id:owner,amount:501},{user_id:ben,amount:500}]}
 ];
 const save='select save_trip_expense(1,$1,$2::jsonb) id';
 for(const v of values)await as(owner,save,[v.id,JSON.stringify({...v,split_method:'custom',expense_date:'2026-11-06',category:'Other'})]);
@@ -71,7 +74,7 @@ await denied(member,'select finalize_trip_settlement(1,$1)',[fp],'42501');
 await denied(owner,"select finalize_trip_settlement(1,'stale')",[],'40001');
 const snap=(await as(owner,'select finalize_trip_settlement(1,$1) id',[fp])).rows[0].id;
 const saved=(await as(owner,'select * from trip_settlements where id=$1',[snap])).rows[0];
-assert.deepEqual(saved.transfers,[{from:owner,to:member,amount:1500,currency:'EUR'},{from:member,to:owner,amount:500,currency:'USD'}]);
+assert.deepEqual(saved.transfers,[{from:owner,to:member,amount:2250,currency:'EUR'},{from:ben,to:member,amount:750,currency:'EUR'},{from:ben,to:owner,amount:500,currency:'USD'}]);
 await denied(owner,"select save_trip_expense(1,$1,'{}',true)",[values[0].id],'40001');
 await denied(owner,'select mark_trip_transfer_paid(1,$1,0)',[snap],'42501');
 await as(member,'select mark_trip_transfer_paid(1,$1,0)',[snap]);
