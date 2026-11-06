@@ -36,8 +36,8 @@ export async function POST(request: Request,{params}:{params:Promise<{tripId:str
     let sourceAction='itinerary_revision';
     if(input.chatMessageId){
       const m=await access.client.from('trip_chat_messages').select('version_id,response').eq('id',input.chatMessageId).eq('trip_id',tripId).eq('author_id',access.user.id).single();
-      if(m.error||m.data.version_id!==input.base||m.data.response?.intent!=='revision'||m.data.response.instruction!==input.instruction||m.data.response.scope!==input.scope||m.data.response.day!==input.day)return json({error:'The chat revision no longer matches this request.'},409);
-      sourceAction='chat_revision';
+      if(m.error||m.data.version_id!==input.base||!['revision','reservation_revision'].includes(m.data.response?.intent)||m.data.response.instruction!==input.instruction||m.data.response.scope!==input.scope||m.data.response.day!==input.day)return json({error:'The chat revision no longer matches this request.'},409);
+      sourceAction=m.data.response.intent==='reservation_revision'?'reservation_revision':'chat_revision';
     }
     const reservations=await reservationContext(access.client,tripId);
     const trip={reservations,source_action:sourceAction,destination:access.trip.destination,start_date:access.trip.start_date,end_date:access.trip.end_date};

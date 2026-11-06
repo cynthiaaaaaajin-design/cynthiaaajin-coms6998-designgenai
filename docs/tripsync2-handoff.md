@@ -32,7 +32,7 @@ Supabase SQL editor inspected the actual project, existing RLS, installed public
 
 - External search links, not live inventory. Approved commercial provider access remains an independent integration step. Official references: https://duffel.com/guides/getting-started and https://duffel.com/docs/api/overview/test-mode explain live activation and the limits of test inventory. Amadeus reference: https://amadeus4dev.github.io/developer-guides/test-data/.
 - Copilot shares history with current trip members; UI loads the latest 50 messages, model context uses the latest 12 with a 90,000-character bound. No automatic long-history summarization or message deletion/retention administration yet.
-- Natural-language reservation/expense intents currently open review forms; users enter/select structured details. Automatic extraction and identity matching are not implemented.
+- Natural-language reservation intents propose explicit facts in a review form; missing details require user completion, and booked status always requires explicit user selection. Expense intents open the expense form; automatic expense parsing and identity matching are not implemented.
 - Supported currencies are an explicit subset; unsupported currencies are rejected. No exchange conversion. Open ledger UI is capped at 999 expenses and fails explicitly above that rather than computing an incomplete settlement.
 - Search is a link adapter, so supplier error/rate-limit metrics and live result comparison/saving are not applicable; users can manually save planning options.
 - Nonmember and three-account deployed tests must be explicitly recorded as blocked if dedicated authorized accounts are unavailable.
