@@ -52,22 +52,22 @@ export function ExpenseEditor({ tripId, userId, people, expense, busy, onSave, o
     }
     setFile(next);
     if (!next && fileInput.current) fileInput.current.value = '';
-    if (next) { previewUrl.current = URL.createObjectURL(next); setPreview(previewUrl.current); }
+    if (next) { previewUrl.current = URL.createObjectURL(next); setPreview(previewUrl.current); void readReceipt(next); }
   }
-  async function readReceipt() {
-    if (!file || reading || busy) return;
+  async function readReceipt(inputFile = file) {
+    if (!inputFile || busy) return;
     const current = ++generation.current;
     const controller = new AbortController(); request.current = controller;
     setReading(true); setError(''); setReviewed(false);
     try {
       const data = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader(); reader.onerror = () => reject(Error('This image could not be opened.'));
-        reader.onload = () => resolve(String(reader.result).split(',')[1]); reader.readAsDataURL(file);
+        reader.onload = () => resolve(String(reader.result).split(',')[1]); reader.readAsDataURL(inputFile);
       });
       if (generation.current !== current) return;
       const response = await fetch(`/api/trips/${tripId}/expenses/receipt`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        signal: controller.signal, body: JSON.stringify({ mimeType: file.type, data }),
+        signal: controller.signal, body: JSON.stringify({ mimeType: inputFile.type, data }),
       });
       const result = await response.json();
       if (generation.current !== current) return;
@@ -95,7 +95,7 @@ export function ExpenseEditor({ tripId, userId, people, expense, busy, onSave, o
     <section className="receipt-upload" aria-labelledby="receipt-upload-title">
       <p className="eyebrow">LESS TYPING, MORE TRAVEL</p>
       <h3 id="receipt-upload-title">Start with a receipt</h3>
-      <p>Upload a receipt or payment screenshot for AI to read, or fill in the form yourself.</p>
+      <p>Choose a receipt or payment screenshot to start AI recognition automatically, or fill in the form yourself.</p>
       <p className="receipt-privacy">The image is sent to our AI provider for recognition. TripSync does not store it. Only the details you confirm are shared with your trip.</p>
       <label>Receipt image · JPEG, PNG or WebP · up to 2 MB
         <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp" disabled={busy} onChange={e => chooseFile(e.target.files?.[0] ?? null)} />

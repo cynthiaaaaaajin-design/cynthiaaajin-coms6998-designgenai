@@ -5,7 +5,7 @@ import ts from 'typescript';
 
 function load(path, deps = {}, globals = {}) {
   const loaded = { exports: {} };
-  const code = ts.transpileModule(readFileSync(path, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+  const code = ts.transpileModule(readFileSync(path, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   vm.runInNewContext(code, { module: loaded, exports: loaded.exports, Buffer, Request, Response, Date, process: { env: { GEMINI_API_KEY: 'fixture' } }, require: id => { assert.ok(id in deps, id); return deps[id]; }, ...globals });
   return loaded.exports;
 }
@@ -47,3 +47,31 @@ const entries = [{ currency: 'USD', amount: 6000, payer_id: 'cynthia', allocatio
 const transfers = expenses.settlement(entries).transfers;
 assert.equal(transfers.length, 1); assert.equal(transfers[0].from, 'yj'); assert.equal(transfers[0].to, 'cynthia'); assert.equal(transfers[0].amount, 2000);
 console.log('PASS receipt parsing, unknown/invalid fields, MIME/signature/size bounds, bounded streamed body, auth-gated read-only extraction, incomplete AI response, and exact two-payer settlement. Provider/auth calls are fixtures.');
+
+// Exercise the file-selection event without a browser: it must request OCR automatically,
+// but may not write an expense merely because a receipt was selected.
+let recognitionRequests = 0, expenseWrites = 0;
+const jsx = (type, props) => ({ type, props });
+const component = load('components/expense-editor.tsx', {
+  react: { useState: initial => [typeof initial === 'function' ? initial() : initial, () => {}], useRef: current => ({ current }), useEffect: () => {} },
+  'react/jsx-runtime': { jsx, jsxs: jsx },
+  '@/lib/expenses': expenses,
+  '@/lib/expense-receipt': receipts,
+}, {
+  crypto, AbortController,
+  URL: { createObjectURL: () => 'blob:fixture', revokeObjectURL: () => {} },
+  FileReader: class { readAsDataURL() { this.result = 'data:image/png;base64,' + image.data; queueMicrotask(() => this.onload()); } },
+  fetch: async () => { recognitionRequests++; return { ok: true, json: async () => ({ draft }) }; },
+});
+const tree = component.ExpenseEditor({ tripId: '1', userId: 'cynthia', people: [{ user_id: 'cynthia', name: 'Cynthia' }], busy: false, onSave: async () => { expenseWrites++; return true; }, onCancel: () => {} });
+function findFile(node) {
+  if (!node || typeof node !== 'object') return null;
+  if (node.type === 'input' && node.props.type === 'file') return node;
+  for (const child of [node.props?.children].flat(Infinity)) { const found = findFile(child); if (found) return found; }
+  return null;
+}
+const fileControl = findFile(tree); assert.ok(fileControl);
+fileControl.props.onChange({ target: { files: [{ type: 'image/png', size: 100 }] } });
+await new Promise(resolve => setImmediate(resolve));
+assert.equal(recognitionRequests, 1); assert.equal(expenseWrites, 0);
+console.log('PASS selecting an image automatically requests recognition without saving an expense. Component hooks/provider are fixtures.');
