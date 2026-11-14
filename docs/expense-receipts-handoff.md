@@ -29,3 +29,11 @@ Reuses server-only GEMINI_API_KEY. Optional GEMINI_RECEIPT_MODEL overrides GEMIN
 ## Limits
 
 Live independent-account uploads and persistence on the deployed site still need verification in the two actual signed-in browser windows. Mocked UI accounts are not evidence of live two-user participation. Recognition is best-effort and requires review; screenshots showing multiple payments, ambiguous currency or unclear dates may require manual entry. Receipts are processed one at a time and are not archived or deduplicated. Add a shared receipt once, rather than having every traveler add the same bill. Transfers use confirmed open expenses only; this does not assume that everyone has finished adding expenses.
+
+## Production release
+
+Final application commit: `1563b76cacae93ada098f0c2c342410a1b73b786`, pushed on `codex/receipt-split-bill`. Deployed from a clean detached worktree; existing unrelated local documents were excluded. Deployment `dpl_6hqH47uTEuUpMpn6NHvGxmiRqiew` reached READY. Stable URL: https://cynthiaaajin-coms6998-designgenai.vercel.app. Immutable URL: https://cynthiaaajin-coms6998-designgenai-2tcwchdv6.vercel.app.
+
+A real signed-in owner session opened Boston Weekend Together (trip 33), Expenses, and Add an expense on the first deployment. The real current participants loaded as Cynthiaaa Jin and Yuxin Jin; the payer defaulted to the owner. Automated selection of a local synthetic image was blocked because the Chrome extension lacks file URL access. No permission setting was changed, no live expense was saved, and no actual two-account upload completion is claimed. The existing finalization rules and live records were not changed. The later automatic-recognition-on-selection update passed a focused component event test and the production build; it was not retested through the blocked browser upload.
+
+Latest immutable deployment: anonymous receipt POST returns 401; cross-origin receipt POST returns 403. Both retain private/no-store responses. Video script remains untouched. Release metadata is in expense-receipts-release.json.

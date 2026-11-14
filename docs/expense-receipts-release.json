@@ -1,0 +1,11 @@
+{
+  "deployed_code_sha": "1563b76cacae93ada098f0c2c342410a1b73b786",
+  "branch": "codex/receipt-split-bill",
+  "deployment_id": "dpl_6hqH47uTEuUpMpn6NHvGxmiRqiew",
+  "status": "READY",
+  "url": "https://cynthiaaajin-coms6998-designgenai.vercel.app",
+  "immutable_url": "https://cynthiaaajin-coms6998-designgenai-2tcwchdv6.vercel.app",
+  "database_migrations": [],
+  "real_provider_receipt_test": "passed with synthetic receipt; isolated auth fixture",
+  "live_two_account_upload_test": "pending; automated browser file selection blocked by extension file URL access setting"
+}
