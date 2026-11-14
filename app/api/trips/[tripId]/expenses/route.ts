@@ -13,7 +13,7 @@ export async function POST(r:Request,{params}:C){try{const {tripId}=await params
  else if(b.action==='paid')result=await a.client.rpc('mark_trip_transfer_paid',{p_trip:tripId,p_settlement:uuid(b.settlement_id),p_index:b.index});
  else if(b.action==='delete')result=await a.client.rpc('save_trip_expense',{p_trip:tripId,p_id:uuid(b.id),p_value:{},p_delete:true});
  else{
-  const currency=String(b.currency) as Currency;if(!(currency in currencies))throw Error('Choose a supported currency.');
+  const currency=String(b.currency) as Currency;if(!Object.hasOwn(currencies,currency))throw Error('Choose a supported currency.');
   if(typeof b.description!=='string'||!b.description.trim()||b.description.length>200||typeof b.amount!=='string'||!['equal','custom','percentage'].includes(String(b.split_method))||!Array.isArray(b.participants)||typeof b.expense_date!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(b.expense_date))throw Error('Complete the expense and participant details.');
   const amount=minor(b.amount,currency);const allocations=allocate(amount,b.split_method as 'equal'|'custom'|'percentage',b.participants.map(p=>({user_id:uuid(p.user_id),value:p.value})),currency);
   result=await a.client.rpc('save_trip_expense',{p_trip:tripId,p_id:uuid(b.id),p_value:{description:b.description.trim(),amount,currency,allocations,payer_id:uuid(b.payer_id),split_method:b.split_method,expense_date:b.expense_date,category:b.category,note:b.note??''}});
