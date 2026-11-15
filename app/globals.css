@@ -1497,6 +1497,8 @@ body { font-family: var(--font-interface); }
 .rating-version { border:1px solid #c8dcd6; background:#eff6f2; border-radius:20px; padding:6px 12px; font-size:12px; white-space:nowrap; }
 .rating-context { margin:10px 0 20px; color:#536d67; font-size:14px; line-height:1.7; }
 .itinerary-rating label { line-height:1.7; }
+.rating-controls { display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px; }
+.rating-controls .phase3-select, .rating-controls > .button-secondary { height:44px; padding-block:10px; line-height:20px; }
 .itinerary-rating textarea { min-height:90px; }
 .rating-save-state { margin-top:14px; color:#536d67; font-size:13px; }
 .itinerary-version-picker { display:flex; align-items:center; flex-wrap:wrap; gap:12px 18px; padding:18px 20px; border:1px solid #d4e2db; border-radius:12px; background:#f2f6f3; }
