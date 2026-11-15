@@ -1,0 +1,18 @@
+{
+  "deployed_code_sha": "b44700ca2e303b7b4949b56c5a95b4c02522f10e",
+  "branch": "codex/receipt-split-bill",
+  "deployment_id": "dpl_6nWUebT1PHbFhZftG82yxFCk8Mro",
+  "ready_state": "READY",
+  "url": "https://cynthiaaajin-coms6998-designgenai.vercel.app",
+  "immutable_url": "https://cynthiaaajin-coms6998-designgenai-mph2r6hyq.vercel.app",
+  "source": "Clean detached worktree containing the committed Share trip fix; unrelated local files excluded.",
+  "verification": {
+    "typescript": "passed",
+    "focused_eslint": "passed",
+    "react_dom": "Sharing opens Members, expands controls, scrolls and focuses from all five sections; repeated clicks and non-owner visibility passed.",
+    "existing_invitation_and_delete_tests": "passed with mocked database",
+    "production_build": "passed on Vercel",
+    "live_owner_browser": "Reloaded Boston Weekend with YJ (trip 35) on production. Share trip opened Members and expanded Your travel crew; Create invitation link became focused.",
+    "invitation_created": false
+  }
+}
