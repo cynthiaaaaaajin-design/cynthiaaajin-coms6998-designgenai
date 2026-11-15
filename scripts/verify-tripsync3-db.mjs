@@ -85,4 +85,29 @@ await denied(owner,'select generation_token from trip_decision_options',[],'4250
 assert.equal((await state(round.id)).decision_snapshot.votes.length,2,'Historical decision survives membership/preferences changes');
 const summaries=(await as(owner,'select list_trip_decisions(1) rounds')).rows[0].rounds;assert.ok(summaries.length>=4);assert.equal('preference_snapshot' in summaries[0],false);assert.equal(summaries[0].options[0].response_text,null);
 console.log('PASS TripSync 3 PostgreSQL: shared own-only preferences, atomic candidate links, hidden leases, no duplicate votes, unanimity/ties, strict majority, old-apply bypass rollback, owner confirmation, parent preservation, frozen votes, stale preferences/reservations/membership, deadlines and nonmember isolation. Fixtures only; no fabricated live member participation.');
+// Regression: trip-owned proposals can be cascaded before decision options.
+// Deferred NO ACTION protects references without making a valid whole-trip delete fail.
+await db.exec('reset role');
+await db.exec(readFileSync(new URL('../sql/trips-delete-owner.sql',import.meta.url),'utf8'));
+await assert.rejects(() => db.exec('begin; delete from trips where id=1; commit;'), e => {
+ assert.equal(e.code,'23503');assert.equal(e.constraint,'trip_decision_options_proposal_id_fkey');return true;
+});
+await db.exec('rollback');
+assert.equal((await db.query('select count(*)::int n from trips where id=1')).rows[0].n,1);
+assert.ok((await db.query('select count(*)::int n from trip_decision_options')).rows[0].n>0);
+for(let i=0;i<2;i++)await db.exec(readFileSync(new URL('../sql/trip-delete-decision-references.sql',import.meta.url),'utf8'));
+await assert.rejects(() => db.exec(`begin; delete from itinerary_proposals where id='${proposalA}'; commit;`),e=>{assert.equal(e.code,'23503');return true;});
+await db.exec('rollback');
+assert.equal((await db.query('select count(*)::int n from itinerary_proposals where id=$1',[proposalA])).rows[0].n,1,'Referenced proposal deletion is still rejected at commit');
+await db.exec(`alter table trips enable row level security;create policy trips_read_owner on trips for select to authenticated using(user_id=auth.uid());grant delete on trips to authenticated;`);
+assert.equal((await as(member,'delete from trips where id=1 returning id')).rows.length,0,'Members cannot delete the trip');
+await as(owner,'begin');
+assert.equal((await as(owner,'delete from trips where id=1 returning id')).rows.length,1);
+await db.exec('commit; reset role;');
+for(const table of ['trip_decisions','trip_decision_options','trip_decision_votes','itinerary_proposals','itinerary_items','itinerary_versions','activity_votes']){
+ assert.equal((await db.query(`select count(*)::int n from ${table}`)).rows[0].n,0,`${table} fully removed with the fixture trip`);
+}
+assert.equal((await db.query('select count(*)::int n from trips where id=2')).rows[0].n,1,'Unrelated trip survives');
+assert.equal((await db.query('select count(*)::int n from profiles')).rows[0].n,4,'Participant profiles survive');
+console.log('PASS whole-trip delete regression: reproduced proposal FK failure and atomic rollback; repeatable deferred-reference fix; standalone referenced-proposal deletion rejected; member denied; owner cascade succeeds; unrelated trip/profiles retained. Isolated fixtures only.');
 await db.close();
