@@ -1,0 +1,27 @@
+{
+  "deployed_code_sha": "4da5cd8e8c2ae4fa298f03626909408963b4a56e",
+  "branch": "codex/receipt-split-bill",
+  "deployment_id": "dpl_2cKxLtdZqBor4FraXMj4pyA3KfUG",
+  "status": "READY",
+  "url": "https://cynthiaaajin-coms6998-designgenai.vercel.app",
+  "immutable_url": "https://cynthiaaajin-coms6998-designgenai-ptsb8t6ni.vercel.app",
+  "migration": "sql/trip-delete-decision-references.sql",
+  "live_constraint": {
+    "name": "trip_decision_options_proposal_id_fkey",
+    "before": {
+      "deferrable": false,
+      "initially_deferred": false
+    },
+    "after": {
+      "deferrable": true,
+      "initially_deferred": true
+    }
+  },
+  "live_counts_before_and_after": {
+    "trips": 20,
+    "trip_32": 1,
+    "trip_32_decisions": 1
+  },
+  "live_trip_deleted": false,
+  "verification": "Isolated PostgreSQL regression and route tests passed; live SQL console verified constraint change and preserved counts. No live DELETE executed."
+}
