@@ -12,7 +12,6 @@ import { GroupConsensus } from '@/components/group-consensus';
 import { PlanningHistory } from '@/components/planning-history';
 import { loadTripPeople } from '@/lib/trip-people';
 import { loadPlanningReviews } from '@/lib/planning-history-server';
-import { TripActions } from "@/components/trip-actions";
 import { DayMap } from "@/components/day-map";
 import { PlaceEnrichment } from "@/components/place-enrichment";
 import { placesEnabled } from "@/lib/places";
@@ -181,10 +180,10 @@ export default async function TripDetail({ params, searchParams }: {
           </div>
           <div className="trip-detail-cover"><DestinationHero tripId={tripId} destination={trip.destination ?? ""} /></div>
         </div>
-        {isOwner && <TripActions tripId={tripId} />}
+        <TripTools header={<>
         {isOwner && <PublicationControls tripId={tripId} post={publication.data} unavailable={!!publication.error} />}
         {isOwner && !placesEnabled() && <p className="notice mt-4">Google place details and map previews are not enabled for this deployment. Configure the server Places API key to enable them; your itinerary and place search links remain available.</p>}
-        <TripTools initialSection={section==='decisions'?'Group Decisions':'Itinerary'} tripId={tripId} versionId={version?.id??null} userId={user.id} isOwner={isOwner} destination={trip.destination??''} start={trip.start_date??''} end={trip.end_date??''} members={isOwner && <ManageTravelers
+        </>} initialSection={section==='decisions'?'Group Decisions':'Itinerary'} tripId={tripId} versionId={version?.id??null} userId={user.id} isOwner={isOwner} destination={trip.destination??''} start={trip.start_date??''} end={trip.end_date??''} members={isOwner && <ManageTravelers
           key={`${tripId}:${travelersError}:${JSON.stringify(travelers)}`}
           tripId={tripId} ownerId={user.id} initialTravelers={travelers} loadError={travelersError}
         />}>
